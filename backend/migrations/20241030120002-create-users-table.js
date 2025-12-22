@@ -66,6 +66,16 @@ module.exports = {
         onUpdate: "CASCADE",
         onDelete: "SET NULL",
       },
+      user_position_id: {
+        type: Sequelize.UUID,
+        allowNull: true,
+        references: {
+          model: "user_positions",
+          key: "user_position_id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
+      },
       position: {
         type: Sequelize.STRING(100),
         allowNull: true,

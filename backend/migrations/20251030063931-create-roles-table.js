@@ -9,6 +9,11 @@ module.exports = {
         primaryKey: true,
         allowNull: false,
       },
+      role_type: {
+        type: Sequelize.ENUM("internal", "external"),
+        allowNull: false,
+        defaultValue: "internal",
+      },
       name: {
         type: Sequelize.STRING(100),
         unique: true,

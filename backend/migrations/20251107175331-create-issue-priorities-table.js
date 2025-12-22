@@ -22,9 +22,18 @@ module.exports = {
         type: Sequelize.TEXT, // HEX color support
         allowNull: true,
       },
-      response_time: {
-        type: Sequelize.TEXT, // supports 3h, 1day, 2week, etc
-        allowNull: true,
+      is_active: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true,
+      },
+      response_duration: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+      },
+      response_unit: {
+        type: Sequelize.ENUM("hour", "day", "month"),
+        allowNull: false,
+        defaultValue: "hour",
       },
       created_at: {
         type: Sequelize.DATE,

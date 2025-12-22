@@ -2,6 +2,12 @@
 const { Model } = require("sequelize");
 const crypto = require("crypto");
 
+const generateTicket = () => {
+  const year = new Date().getFullYear().toString().slice(-2);
+  const randomCode = crypto.randomBytes(3).toString("hex").toUpperCase();
+  return `TICK-${year}-${randomCode}`;
+};
+
 module.exports = (sequelize, DataTypes) => {
   class Issue extends Model {
     static associate(models) {
@@ -112,7 +118,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       ticket_number: {
         type: DataTypes.STRING(20),
-        allowNull: true,
+        allowNull: false,
         unique: true,
       },
       project_id: {
@@ -177,39 +183,27 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: true,
       createdAt: "created_at",
       updatedAt: "updated_at",
+      hooks: {
+        beforeCreate: async (issue) => {
+          if (!issue.ticket_number || issue.ticket_number === "") {
+            let ticket;
+            let exists = true;
+
+            // Keep generating until unique
+            while (exists) {
+              ticket = generateTicket();
+              const existing = await Issue.findOne({
+                where: { ticket_number: ticket },
+              });
+              exists = !!existing;
+            }
+
+            issue.ticket_number = ticket;
+          }
+        },
+      },
     }
   );
-
-  Issue.beforeCreate(async (issue, options) => {
-    // console.log("=== BEFORE CREATE HOOK ===");
-    // console.log("Issue data:", issue.dataValues);
-    // console.log("Ticket number before:", issue.ticket_number);
-
-    if (!issue.ticket_number) {
-      // console.log("Generating ticket number...");
-      const year = new Date().getFullYear().toString().slice(-2);
-      let randomCode = crypto.randomBytes(3).toString("hex").toUpperCase();
-      let ticket = `TICK-${year}-${randomCode}`;
-
-      // Check duplicates
-      let exists = await Issue.findOne({
-        where: { ticket_number: ticket },
-        transaction: options?.transaction,
-      });
-
-      while (exists) {
-        randomCode = crypto.randomBytes(3).toString("hex").toUpperCase();
-        ticket = `TICK-${year}-${randomCode}`;
-        exists = await Issue.findOne({
-          where: { ticket_number: ticket },
-          transaction: options?.transaction,
-        });
-      }
-
-      // console.log("Generated ticket:", ticket);
-      issue.ticket_number = ticket;
-    }
-  });
 
   return Issue;
 };
