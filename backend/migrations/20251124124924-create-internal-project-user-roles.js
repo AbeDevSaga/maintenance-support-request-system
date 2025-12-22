@@ -53,6 +53,17 @@ module.exports = {
         onDelete: "SET NULL",
       },
 
+      project_metric_id: {
+        type: Sequelize.UUID,
+        allowNull: true,
+        references: {
+          table: "project_metrics",
+          field: "project_metric_id",
+        },
+        onDelete: "CASCADE",
+        onUpdate: "CASCADE",
+      },
+
       is_active: {
         type: Sequelize.BOOLEAN,
         defaultValue: true,

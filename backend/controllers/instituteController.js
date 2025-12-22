@@ -7,15 +7,15 @@ const createInstitute = async (req, res) => {
     let { name, description, is_active, attachments } = req.body;
 
     // Normalize name to JSON
-    if (typeof name === "string") {
-      name = { en: name };
-    } else if (typeof name !== "object" || name === null) {
-      return res.status(400).json({ message: "Invalid name format" });
-    }
+    // if (typeof name === "string") {
+    //   name = { en: name };
+    // } else if (typeof name !== "object" || name === null) {
+    //   return res.status(400).json({ message: "Invalid name format" });
+    // }
 
     // Check if institute exists
     const existingInstitute = await Institute.findOne({
-      where: { name: { en: name.en } },
+      where: { name },
     });
     if (existingInstitute)
       return res

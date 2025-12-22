@@ -1,4 +1,11 @@
 "use strict";
+const crypto = require("crypto");
+
+function generateTicket() {
+  const year = new Date().getFullYear().toString().slice(-2);
+  const randomCode = crypto.randomBytes(3).toString("hex").toUpperCase();
+  return `TICK-${year}-${randomCode}`;
+}
 
 module.exports = {
   async up(queryInterface, Sequelize) {
@@ -18,6 +25,11 @@ module.exports = {
         },
         onUpdate: "CASCADE",
         onDelete: "CASCADE", // issues must be deleted if project is deleted
+      },
+      ticket_number: {
+        type: Sequelize.STRING(30),
+        allowNull: false,
+        unique: true,
       },
       title: {
         type: Sequelize.STRING(255),
