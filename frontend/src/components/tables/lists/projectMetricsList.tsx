@@ -37,11 +37,11 @@ export default function ProjectMetricsList() {
         <div className="font-medium text-blue-600">{row.getValue("name")}</div>
       ),
     },
-    {
-      accessorKey: "description",
-      header: "Description",
-      cell: ({ row }: any) => <div>{row.getValue("description") || "N/A"}</div>,
-    },
+    // {
+    //   accessorKey: "description",
+    //   header: "Description",
+    //   cell: ({ row }: any) => <div>{row.getValue("description") || "N/A"}</div>,
+    // },
 
     {
       id: "actions",
@@ -150,8 +150,8 @@ export default function ProjectMetricsList() {
         filters={filterFields}
         filterColumnsPerRow={1}
         actions={actions}
-        title="Project Metrics List"
-        description="List of all project metrics"
+        title="Human Resource List"
+        description="List of all human resources"
       >
         <DataTable
           columns={metricColumns}

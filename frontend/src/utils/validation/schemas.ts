@@ -25,18 +25,36 @@ export type CategoryFormData = z.infer<typeof categorySchema>;
 /**
  * Priority Schemas
  */
-
+// color_value
+// : 
+// "#aabbcc"
+// description
+// : 
+// "checking"
+// is_active
+// : 
+// false
+// name
+// : 
+// "high"
+// response_duration
+// : 
+// 10
+// response_unit
+// : 
+// "hour"
 export const prioritySchema = createSchema({
-  name: rules.nonEmptyString("Priority name is required"),
-  description: rules.optionalString,
-  response_duration: rules.optionalNumber,
-  response_time: rules.positiveNumber("Please enter a valid response time").optional(),
-  response_unit: z.enum(["hour", "day", "month"]).optional(),
-  color_value: rules.colorHex(),
-  color: rules.colorHex(),
-  escalate: rules.boolean,
-  is_active: rules.boolean,
+  name: rules.required("Priority name is required"),
+  description: rules.required("Description is required"),
+  response_duration: z.coerce.number({
+    message: "Response time must be a number",
+  }).positive("Response time must be greater than 0"),
+  
+  response_unit: z.enum(["hour", "day", "month"], "Response unit is required"),
+  color_value: rules.colorHex("Color have to be in hex format like #aabbcc"),
+  is_active: z.boolean()
 });
+
 export type PriorityFormData = z.infer<typeof prioritySchema>;
 
 /**
@@ -152,9 +170,7 @@ export type HierarchyFormData = z.infer<typeof hierarchySchema>;
 
 export const hierarchyNodeSchema = createSchema({
   name: rules.nonEmptyString("Hierarchy node name is required"),
-  description: rules.optionalString,
-  parent_hierarchy_node_id: rules.optionalUuid,
-  hierarchy_id: rules.optionalUuid,
+  parent_id: rules.optionalUuid,
   is_active: rules.boolean,
 });
 export type HierarchyNodeFormData = z.infer<typeof hierarchyNodeSchema>;
