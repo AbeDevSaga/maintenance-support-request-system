@@ -33,7 +33,7 @@ type StatCard = {
 const woredaStatistics: StatCard[] = [
   {
     id: "1",
-    title: "Total Applications",
+    title: "Resloved Requests",
     value: 4236,
     percent: 68,
     change: "+12%",
@@ -42,7 +42,7 @@ const woredaStatistics: StatCard[] = [
   },
   {
     id: "2",
-    title: "Shortlisted Candidates",
+    title: "Pending Requests",
     value: 2845,
     percent: 72,
     change: "+8%",
@@ -51,7 +51,7 @@ const woredaStatistics: StatCard[] = [
   },
   {
     id: "3",
-    title: "Rejected Candidates",
+    title: "Rejected Requests",
     value: 876,
     percent: 38,
     change: "-2%",
@@ -63,7 +63,7 @@ const woredaStatistics: StatCard[] = [
 const cityStatistics: StatCard[] = [
   {
     id: "1",
-    title: "Total Applications",
+    title: "Resloved Requests",
     value: 8924,
     percent: 82,
     change: "+18%",
@@ -72,7 +72,7 @@ const cityStatistics: StatCard[] = [
   },
   {
     id: "2",
-    title: "Shortlisted Candidates",
+    title: "Pending Requests",
     value: 5347,
     percent: 78,
     change: "+12%",
@@ -81,7 +81,7 @@ const cityStatistics: StatCard[] = [
   },
   {
     id: "3",
-    title: "Rejected Candidates",
+    title: "Rejected Requests",
     value: 2156,
     percent: 52,
     change: "+5%",
@@ -93,7 +93,7 @@ const cityStatistics: StatCard[] = [
 const subcityStatistics: StatCard[] = [
   {
     id: "1",
-    title: "Total Applications",
+    title: "Resloved Requests",
     value: 3268,
     percent: 61,
     change: "+9%",
@@ -102,7 +102,7 @@ const subcityStatistics: StatCard[] = [
   },
   {
     id: "2",
-    title: "Shortlisted Candidates",
+    title: "Pending Requests",
     value: 1843,
     percent: 55,
     change: "+4%",
@@ -111,7 +111,7 @@ const subcityStatistics: StatCard[] = [
   },
   {
     id: "3",
-    title: "Rejected Candidates",
+    title: "Rejected Requests",
     value: 892,
     percent: 42,
     change: "+1%",
@@ -188,12 +188,12 @@ export default function VariantStatasCard() {
             }
           >
             <SelectTrigger
-              className="w-full sm:w-[180px] rounded-lg"
+              className="w-full sm:w-[180px] rounded-lg bg-white"
               aria-label="Select statistics type"
             >
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
-            <SelectContent className="rounded-xl">
+            <SelectContent className="rounded-xl bg-white">
               <SelectItem value="woreda" className="rounded-lg">
                 Woreda Statistics
               </SelectItem>
@@ -213,7 +213,7 @@ export default function VariantStatasCard() {
             >
               <SelectValue placeholder="Last 3 months" />
             </SelectTrigger>
-            <SelectContent className="rounded-xl">
+            <SelectContent className="rounded-xl bg-white">
               <SelectItem value="90d" className="rounded-lg">
                 Last 3 months
               </SelectItem>
