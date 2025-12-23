@@ -13,7 +13,8 @@ export const rules = {
   /**
    * Optional string field
    */
-  optionalString: z.string().optional(),
+  optionalUuid: z.string().uuid().optional(),
+
 
     /**
    * Optional textarea field

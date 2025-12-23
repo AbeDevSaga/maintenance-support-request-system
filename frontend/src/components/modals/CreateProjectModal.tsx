@@ -7,11 +7,18 @@ import { Button } from "../ui/cn/button";
 import DatePicker from "react-datepicker";
 import { useCreateProjectMutation } from "../../redux/services/projectApi";
 import { XIcon, CalendarIcon, Check } from "lucide-react";
-import { Textarea } from "../ui/cn/textarea";
 
 // Import react-datepicker styles
 import "react-datepicker/dist/react-datepicker.css";
 import { useGetProjectMetricsQuery } from "../../redux/services/projectMetricApi";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  projectSchema,
+  type ProjectFormData,
+} from "../../utils/validation/schemas";
+import TextArea from "../form/input/TextArea";
+import Input from "../form/input/InputField";
 
 interface CreateProjectModalProps {
   instituteId: string;
@@ -36,12 +43,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
-  const [maintenanceStart, setMaintenanceStart] = useState<Date | null>(null);
-  const [maintenanceEnd, setMaintenanceEnd] = useState<Date | null>(null);
-  const [projectMetricsIds, setProjectMetricsIds] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
   const [createProject, { isLoading }] = useCreateProjectMutation();
@@ -50,6 +52,28 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     isLoading: loadingMetrics,
     isError,
   } = useGetProjectMetricsQuery({});
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    trigger,
+    formState: { errors, isSubmitting },
+  } = useForm<ProjectFormData>({
+    resolver: zodResolver(projectSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      is_active: true,
+      maintenance_start: undefined,
+      maintenance_end: undefined,
+      project_metrics_ids: [],
+    },
+  });
+  const maintenanceStart = watch("maintenance_start");
+  const maintenanceEnd = watch("maintenance_end");
+  const projectMetricsIds = watch("project_metrics_ids") || [];
 
   const metrics: ProjectMetric[] = metricsData || [];
 
@@ -60,87 +84,75 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     }
   }, [projectMetricsIds, metrics]);
 
+  // Fix setProjectMetricsIds to use setValue:
   const handleMetricSelect = (metricId: string) => {
-    setProjectMetricsIds((prev) => {
-      if (prev.includes(metricId)) {
-        return prev.filter((id) => id !== metricId);
-      } else {
-        return [...prev, metricId];
-      }
-    });
+    const currentIds = projectMetricsIds || [];
+    const newIds = currentIds.includes(metricId)
+      ? currentIds.filter((id) => id !== metricId)
+      : [...currentIds, metricId];
+      setValue("project_metrics_ids", newIds, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+      
   };
 
   const handleSelectAll = () => {
     if (selectAll) {
-      // Deselect all
-      setProjectMetricsIds([]);
+      setValue("project_metrics_ids", [], {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+
       setSelectAll(false);
     } else {
-      // Select all
       const allMetricIds = metrics.map((metric) => metric.project_metric_id);
-      setProjectMetricsIds(allMetricIds);
       setSelectAll(true);
+      setValue("project_metrics_ids", allMetricIds, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
     }
   };
-
-  const handleSubmit = async () => {
-    if (!name) {
-      toast.error("Please provide a project name");
-      return;
-    }
-
-    if (
-      maintenanceStart &&
-      maintenanceEnd &&
-      maintenanceStart > maintenanceEnd
-    ) {
-      toast.error("Maintenance start date cannot be later than end date");
-      return;
-    }
-
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+  const onSubmit = async (data: ProjectFormData) => {
     const payload = {
-      name,
-      description: description || undefined,
-      is_active: isActive,
+      name: data.name,
+      description: data.description || undefined,
+      is_active: data.is_active ?? true,
       institute_id: instituteId || undefined,
-      maintenance_start: maintenanceStart
-        ? maintenanceStart.toISOString().split("T")[0]
+      maintenance_start: data.maintenance_start
+        ? data.maintenance_start.toISOString().split("T")[0]
         : undefined,
-      maintenance_end: maintenanceEnd
-        ? maintenanceEnd.toISOString().split("T")[0]
+      maintenance_end: data.maintenance_end
+        ? data.maintenance_end.toISOString().split("T")[0]
         : undefined,
       project_metrics_ids:
-        projectMetricsIds.length > 0 ? projectMetricsIds : undefined,
+        (data.project_metrics_ids?.length ?? 0) > 0
+          ? data.project_metrics_ids
+          : undefined,
     };
 
     try {
       await createProject(payload).unwrap();
       toast.success("Project created successfully!");
-      onClose();
-      resetForm();
-    } catch (error: any) {
+      handleClose();
+    } catch (error: unknown) {
       toast.error(error?.data?.message || "Failed to create project");
     }
   };
 
-  const resetForm = () => {
-    setName("");
-    setDescription("");
-    setMaintenanceStart(null);
-    setMaintenanceEnd(null);
-    setIsActive(true);
-    setProjectMetricsIds([]);
-    setSelectAll(false);
-  };
-
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) onClose();
+    if (e.target === e.currentTarget) handleClose();
   };
 
   // Handle manual date input parsing
   const parseDateInput = (inputValue: string): Date | null => {
     if (!inputValue) return null;
-    
+
     // Try parsing MM/DD/YYYY format
     const dateMatch = inputValue.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (dateMatch) {
@@ -148,7 +160,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       const day = parseInt(dateMatch[2], 10);
       const year = parseInt(dateMatch[3], 10);
       const date = new Date(year, month, day);
-      
+
       // Validate the date
       if (
         date.getFullYear() === year &&
@@ -158,19 +170,18 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         return date;
       }
     }
-    
+
     // Try parsing as ISO date string
     const isoDate = new Date(inputValue);
     if (!isNaN(isoDate.getTime())) {
       return isoDate;
     }
-    
+
     return null;
   };
 
-  // Custom input component for DatePicker to allow manual input
   const CustomDateInput = React.forwardRef<HTMLInputElement, any>(
-    ({ value, onClick, onChange, onBlur }, ref) => (
+    ({ value, onClick, onChange, onBlur, error }, ref) => (
       <div className="relative w-full">
         <input
           type="text"
@@ -179,13 +190,19 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           onBlur={onBlur}
           onClick={onClick}
           ref={ref}
-          placeholder="MM/DD/YYYY "
-          className="w-full min-w-[330px] h-12 border border-gray-300 px-4 py-2 pr-10 rounded-md shadow-sm focus:ring-2 focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none bg-white text-gray-900"
+          placeholder="MM/DD/YYYY"
+          className={`w-full min-w-[330px] h-12 px-4 py-2 pr-10 rounded-md shadow-sm outline-none transition-all duration-200 bg-white text-gray-900
+            ${
+              error
+                ? "border border-red-300 focus:ring-2 focus:ring-red-500/20 focus:border-red-400"
+                : "border border-gray-300 focus:ring-2 focus:ring-[#094C81]/20 focus:border-[#094C81]"
+            }
+          `}
         />
         <button
           type="button"
           onClick={onClick}
-          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
           tabIndex={-1}
         >
           <CalendarIcon className="w-4 h-4" />
@@ -194,7 +211,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     )
   );
   CustomDateInput.displayName = "CustomDateInput";
-
+  
   if (!isOpen) return null;
 
   return (
@@ -202,13 +219,16 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-200"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white p-6 rounded-2xl w-full max-w-[800px] shadow-2xl transform transition-all duration-200">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="bg-white p-6 rounded-2xl w-full max-w-[800px] shadow-2xl transform transition-all duration-200"
+      >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-[24px] font-bold text-[#094C81]">
             Create Project
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="text-[#094C81] hover:text-gray-600 transition-colors duration-200"
           >
             <XIcon className="w-6 h-6 cursor-pointer" />
@@ -226,12 +246,12 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                 <Label className="block text-sm text-[#094C81] font-medium mb-2">
                   Project Name <span className="text-red-500">*</span>
                 </Label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                <Input
+                  id="name"
                   placeholder="Enter project name"
-                  className="w-full border border-gray-300 px-4 py-3 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 outline-none"
+                  {...register("name")}
+                  error={!!errors.name}
+                  hint={errors.name?.message}
                 />
               </div>
 
@@ -239,12 +259,17 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                 <Label className="block text-sm text-[#094C81] font-medium mb-2">
                   Description
                 </Label>
-                <Textarea
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                <TextArea
+                  id="description"
                   placeholder="Project description"
-                  className="w-full min-h-[40px] max-w-[350px] border border-gray-300 px-4 py-2 rounded-md focus:ring-2 focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none"
+                  value={watch("description") || ""}
+                  onChange={(value) => {
+                    setValue("description", value);
+                    trigger("description");
+                  }}
+                  error={!!errors.description}
+                  hint={errors.description?.message}
+                  className="w-full min-h-[40px] max-w-[350px]"
                 />
               </div>
             </div>
@@ -256,77 +281,70 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
               </h3>
 
               <div className="w-full">
-                <Label className="block text-sm text-[#094C81] font-medium mb-2">
-                  Start Date
-                </Label>
-                <DatePicker
-                  selected={maintenanceStart}
-                  onChange={(date) => setMaintenanceStart(date)}
-                  onChangeRaw={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    if (e && e.target) {
-                      const inputValue = e.target.value;
-                      const parsedDate = parseDateInput(inputValue);
-                      if (parsedDate && parsedDate >= new Date()) {
-                        setMaintenanceStart(parsedDate);
-                      }
+                <div className="w-full">
+                  <Label className="block text-sm text-[#094C81] font-medium mb-2">
+                    Start Date
+                  </Label>
+                  <DatePicker
+                    selected={maintenanceStart}
+                    onChange={(date) =>
+                      setValue("maintenance_start", date ?? undefined, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      })
                     }
-                  }}
-                  selectsStart
-                  startDate={maintenanceStart}
-                  endDate={maintenanceEnd}
-                  customInput={<CustomDateInput />}
-                  dateFormat="MM/dd/yyyy"
-                  showYearDropdown
-                  showMonthDropdown
-                  dropdownMode="select"
-                  allowSameDay={false}
-                  minDate={new Date()}
-                  yearDropdownItemNumber={100}
-                  scrollableYearDropdown
-                  strictParsing={false}
-                  openToDate={maintenanceStart || new Date()}
-                />
+                    selectsStart
+                    startDate={maintenanceStart}
+                    endDate={maintenanceEnd}
+                    minDate={new Date()}
+                    customInput={
+                      <CustomDateInput error={!!errors.maintenance_start} />
+                    }
+                    dateFormat="MM/dd/yyyy"
+                  />
+                </div>
+                {errors.maintenance_start && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.maintenance_start.message}
+                  </p>
+                )}
               </div>
-
               <div className="w-full">
-                <Label className="block text-sm text-[#094C81] font-medium mb-2">
-                  End Date
-                </Label>
-                <DatePicker
-                  selected={maintenanceEnd}
-                  onChange={(date) => setMaintenanceEnd(date)}
-                  onChangeRaw={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    if (e && e.target) {
-                      const inputValue = e.target.value;
-                      const parsedDate = parseDateInput(inputValue);
-                      const minDate = maintenanceStart || new Date();
-                      if (parsedDate && parsedDate >= minDate) {
-                        setMaintenanceEnd(parsedDate);
-                      }
+                <div className="w-full">
+                  <Label className="block text-sm text-[#094C81] font-medium mb-2">
+                    End Date
+                  </Label>
+                  <DatePicker
+                    selected={maintenanceEnd}
+                    onChange={(date) =>
+                      setValue("maintenance_end", date ?? undefined, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      })
                     }
-                  }}
-                  selectsEnd
-                  startDate={maintenanceStart}
-                  endDate={maintenanceEnd}
-                  minDate={maintenanceStart || new Date()}
-                  customInput={<CustomDateInput />}
-                  dateFormat="MM/dd/yyyy"
-                  showYearDropdown
-                  showMonthDropdown
-                  dropdownMode="select"
-                  allowSameDay={false}
-                  yearDropdownItemNumber={100}
-                  scrollableYearDropdown
-                  strictParsing={false}
-                  openToDate={maintenanceEnd || maintenanceStart || new Date()}
-                />
+                    selectsEnd
+                    startDate={maintenanceStart}
+                    endDate={maintenanceEnd}
+                    minDate={maintenanceStart || new Date()}
+                    customInput={
+                      <CustomDateInput error={!!errors.maintenance_end} />
+                    }
+                    dateFormat="MM/dd/yyyy"
+                  />
+                </div>
+
+                {errors.maintenance_end && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors.maintenance_end.message}
+                  </p>
+                )}
               </div>
             </div>
           </div>
           {/* Bottom Panel: Project Metrics Selection */}
-          <div className="w-full border border-gray-200 flex flex-col gap-4 p-5 shadow-sm rounded-lg">
+          <div className="w-full border border-gray-200 flex flex-col  p-5 shadow-sm rounded-lg">
             {/* Header with count */}
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex mb-5 items-center justify-between ">
               <div className="flex items-center gap-3">
                 <h3 className="text-[#094C81] font-semibold text-lg">
                   Project Human Resources
@@ -379,7 +397,9 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                           ? "bg-[#094C81]/10 border-[#094C81] shadow-sm"
                           : "bg-white border-gray-200 hover:border-[#094C81]/50 hover:bg-gray-50"
                       }`}
-                      onClick={() => handleMetricSelect(metric.project_metric_id)}
+                      onClick={() =>
+                        handleMetricSelect(metric.project_metric_id)
+                      }
                     >
                       <div
                         className={`w-4 h-4 border-2 rounded flex items-center justify-center transition-all duration-200 shrink-0 ${
@@ -388,12 +408,14 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                             : "border-gray-300 bg-white"
                         }`}
                       >
-                        {projectMetricsIds.includes(metric.project_metric_id) ? (
+                        {projectMetricsIds.includes(
+                          metric.project_metric_id
+                        ) ? (
                           <Check className="w-2.5 h-2.5 stroke-3" />
                         ) : null}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div 
+                        <div
                           className="font-medium text-sm text-gray-900 truncate leading-tight"
                           title={metric.name}
                         >
@@ -409,18 +431,24 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                 )}
               </div>
             )}
+
+            {errors.project_metrics_ids && (
+              <p className="text-xs text-red-500 mt-2">
+                {errors.project_metrics_ids.message}
+              </p>
+            )}
           </div>
         </div>
 
         <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isLoading}>
+          <Button type="submit" disabled={isSubmitting || isLoading}>
             {isLoading ? "Creating..." : "Create"}
           </Button>
         </div>
-      </div>
+      </form>
     </div>
   );
 };

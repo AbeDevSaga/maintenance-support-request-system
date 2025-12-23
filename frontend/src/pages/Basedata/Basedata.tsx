@@ -6,6 +6,7 @@ import {
   FaExclamationTriangle,
   FaFlag,
   FaProjectDiagram,
+  FaUserTie,
 } from "react-icons/fa";
 
 export default function Basedata() {
