@@ -12,6 +12,7 @@ import { Textarea } from "../ui/cn/textarea";
 // Import react-datepicker styles
 import "react-datepicker/dist/react-datepicker.css";
 import { useGetProjectMetricsQuery } from "../../redux/services/projectMetricApi";
+import { formatDateToLocal } from "../../utils/helper/dateFormaterToLocal";
 
 interface CreateProjectModalProps {
   instituteId: string;
@@ -104,10 +105,10 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       is_active: isActive,
       institute_id: instituteId || undefined,
       maintenance_start: maintenanceStart
-        ? maintenanceStart.toISOString().split("T")[0]
+        ? formatDateToLocal(maintenanceStart)
         : undefined,
       maintenance_end: maintenanceEnd
-        ? maintenanceEnd.toISOString().split("T")[0]
+        ? formatDateToLocal(maintenanceEnd)
         : undefined,
       project_metrics_ids:
         projectMetricsIds.length > 0 ? projectMetricsIds : undefined,
@@ -115,6 +116,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 
     try {
       await createProject(payload).unwrap();
+      // console.log("payload: ", payload);
       toast.success("Project created successfully!");
       onClose();
       resetForm();
@@ -140,7 +142,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   // Handle manual date input parsing
   const parseDateInput = (inputValue: string): Date | null => {
     if (!inputValue) return null;
-    
+
     // Try parsing MM/DD/YYYY format
     const dateMatch = inputValue.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (dateMatch) {
@@ -148,7 +150,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       const day = parseInt(dateMatch[2], 10);
       const year = parseInt(dateMatch[3], 10);
       const date = new Date(year, month, day);
-      
+
       // Validate the date
       if (
         date.getFullYear() === year &&
@@ -158,13 +160,13 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         return date;
       }
     }
-    
+
     // Try parsing as ISO date string
     const isoDate = new Date(inputValue);
     if (!isNaN(isoDate.getTime())) {
       return isoDate;
     }
-    
+
     return null;
   };
 
@@ -379,7 +381,9 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                           ? "bg-[#094C81]/10 border-[#094C81] shadow-sm"
                           : "bg-white border-gray-200 hover:border-[#094C81]/50 hover:bg-gray-50"
                       }`}
-                      onClick={() => handleMetricSelect(metric.project_metric_id)}
+                      onClick={() =>
+                        handleMetricSelect(metric.project_metric_id)
+                      }
                     >
                       <div
                         className={`w-4 h-4 border-2 rounded flex items-center justify-center transition-all duration-200 shrink-0 ${
@@ -388,12 +392,14 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                             : "border-gray-300 bg-white"
                         }`}
                       >
-                        {projectMetricsIds.includes(metric.project_metric_id) ? (
+                        {projectMetricsIds.includes(
+                          metric.project_metric_id
+                        ) ? (
                           <Check className="w-2.5 h-2.5 stroke-3" />
                         ) : null}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div 
+                        <div
                           className="font-medium text-sm text-gray-900 truncate leading-tight"
                           title={metric.name}
                         >
