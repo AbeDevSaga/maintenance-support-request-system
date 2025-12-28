@@ -478,7 +478,7 @@ export default function CreateRole() {
                     <div className="flex items-center space-x-2 text-sm">
                       <span className="text-[#094C81]">Selected:</span>
                       <span className="font-semibold text-[#094C81]">
-                        {getSelectedPermissions().length}
+                        {getSelectedPermissions().length} 
                       </span>
                       <span className="text-[#094C81]">/</span>
                       <span className="text-[#094C81]">
@@ -486,6 +486,31 @@ export default function CreateRole() {
                           (acc, group) => acc + group.permissions.length,
                           0
                         )}
+                      </span>
+                      <span className="flex items-center space-x-2 ml-2 text-white">
+                        <Button
+                          type="button"
+                          className="cursor-pointer"
+                          onClick={() => {
+                            resourceGroups.forEach((group) => {
+                              selectAllInResource(group.resource, true);
+                            });
+                          }}
+                        >
+                          Select All
+                        </Button>
+
+                        <Button
+                          type="button"
+                          className="bg-red-400 hover:bg-red-500 cursor-pointer"
+                          onClick={() => {
+                            resourceGroups.forEach((group) => {
+                              selectAllInResource(group.resource, false);
+                            });
+                          }}
+                        >
+                          Deselect All
+                        </Button>
                       </span>
                     </div>
                   </CardTitle>
