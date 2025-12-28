@@ -19,7 +19,11 @@ const {
   IssueResolution,
   IssueSolution,
   IssueSolutionAttachment,
+  IssueReRaise,
+  ReRaiseAttachment,
   IssueAttachment,
+  IssueReject,
+  RejectAttachment,
   Attachment,
   IssueAction,
   IssueStatusHistory,
@@ -657,6 +661,32 @@ const getIssueById = async (req, res) => {
             },
           ],
         },
+        // Rejection & their attachments
+        {
+          model: IssueReject,
+          as: "rejects",
+          include: [
+            { model: User, as: "rejector" },
+            {
+              model: RejectAttachment,
+              as: "attachments",
+              include: [{ model: Attachment, as: "attachment" }],
+            },
+          ],
+        },
+        // Re Raise & their attachments
+        {
+          model: IssueReRaise,
+          as: "reRaises",
+          include: [
+            { model: User, as: "re_raiser" },
+            {
+              model: ReRaiseAttachment,
+              as: "attachments",
+              include: [{ model: Attachment, as: "attachment" }],
+            },
+          ],
+        },
         // Assignment & their attachments
         {
           model: IssueAssignment,
@@ -880,305 +910,6 @@ const getIssuesByHierarchyNodeId = async (req, res) => {
 // ================================
 // GET ISSUES BY MULTIPLE HIERARCHY NODE ID
 // ================================
-// const getIssuesByMultipleHierarchyNodes = async (req, res) => {
-//   try {
-//     const { pairs, user_id } = req.params; // Change from req.query to req.params
-
-//     if (!pairs) {
-//       return res.status(400).json({
-//         message: "Pairs parameter is required",
-//       });
-//     }
-
-//     if (!user_id) {
-//       return res.status(400).json({
-//         message: "User ID is required",
-//       });
-//     }
-
-//     let pairsArray;
-//     try {
-//       pairsArray = JSON.parse(pairs);
-//     } catch (parseError) {
-//       return res.status(400).json({
-//         message: "Invalid pairs format. Expected JSON array",
-//       });
-//     }
-
-//     if (!Array.isArray(pairsArray)) {
-//       return res.status(400).json({
-//         message: "Pairs must be an array",
-//       });
-//     }
-
-//     // Validate each pair
-//     const validPairs = pairsArray.filter(
-//       (pair) => pair.project_id && pair.hierarchy_node_id
-//     );
-
-//     if (validPairs.length === 0) {
-//       return res.status(400).json({
-//         message:
-//           "No valid pairs provided. Each pair must have project_id and hierarchy_node_id",
-//       });
-//     }
-
-//     // Create where conditions for all pairs
-//     const whereConditions = {
-//       [Op.or]: validPairs.map((pair) => ({
-//         project_id: pair.project_id,
-//         hierarchy_node_id: pair.hierarchy_node_id,
-//       })),
-//       // ❗ EXCLUDE issues reported by this user
-//       reported_by: {
-//         [Op.ne]: user_id,
-//       },
-//     };
-
-//     const issues = await Issue.findAll({
-//       where: whereConditions,
-//       include: [
-//         { model: Project, as: "project" },
-//         { model: IssueCategory, as: "category" },
-//         { model: IssuePriority, as: "priority" },
-//         { model: HierarchyNode, as: "hierarchyNode" },
-//         { model: User, as: "reporter" },
-//         { model: User, as: "assignee" },
-//         {
-//           model: IssueComment,
-//           as: "comments",
-//           include: [{ model: User, as: "author" }],
-//         },
-//         {
-//           model: IssueAttachment,
-//           as: "attachments",
-//           include: [{ model: Attachment, as: "attachment" }],
-//         },
-//       ],
-//       order: [["created_at", "DESC"]],
-//     });
-
-//     res.status(200).json(issues);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({
-//       message: "Internal server error",
-//       error: error.message,
-//     });
-//   }
-// };
-
-// const getIssuesByMultipleHierarchyNodes = async (req, res) => {
-//   try {
-//     const { pairs, user_id } = req.params;
-
-//     if (!pairs || !user_id)
-//       return res
-//         .status(400)
-//         .json({ message: "Pairs and user_id are required" });
-
-//     let pairsArray;
-//     try {
-//       pairsArray = JSON.parse(pairs);
-//     } catch {
-//       return res
-//         .status(400)
-//         .json({ message: "Invalid pairs format. Expected JSON array" });
-//     }
-
-//     const validPairs = pairsArray.filter(
-//       (p) => p.project_id && p.hierarchy_node_id
-//     );
-//     if (validPairs.length === 0)
-//       return res.status(400).json({
-//         message:
-//           "No valid pairs provided. Each pair must have project_id and hierarchy_node_id",
-//       });
-
-//     // ------------------------------------------------------------
-//     // 1️⃣ Get levels of all requested hierarchy nodes
-//     // ------------------------------------------------------------
-//     const hierarchyNodes = await HierarchyNode.findAll({
-//       where: { hierarchy_node_id: validPairs.map((p) => p.hierarchy_node_id) },
-//     });
-
-//     const hierarchyLevels = hierarchyNodes.map((n) => n.level);
-
-//     // ------------------------------------------------------------
-//     // 2️⃣ Find all hierarchy_node_ids at those levels (siblings)
-//     // ------------------------------------------------------------
-//     const siblingNodes = await HierarchyNode.findAll({
-//       where: { level: { [Op.in]: hierarchyLevels } },
-//     });
-//     const siblingNodeIds = siblingNodes.map((n) => n.hierarchy_node_id);
-
-//     // ------------------------------------------------------------
-//     // 3️⃣ GET DIRECT ISSUES (all siblings)
-//     // ------------------------------------------------------------
-//     const directIssues = await Issue.findAll({
-//       where: {
-//         project_id: validPairs.map((p) => p.project_id),
-//         hierarchy_node_id: { [Op.in]: siblingNodeIds },
-//         reported_by: { [Op.ne]: user_id },
-//       },
-//       include: [
-//         { model: Project, as: "project" },
-//         { model: IssueCategory, as: "category" },
-//         { model: IssuePriority, as: "priority" },
-//         { model: HierarchyNode, as: "hierarchyNode" },
-//         { model: User, as: "reporter" },
-//         { model: User, as: "assignee" },
-//         {
-//           model: IssueComment,
-//           as: "comments",
-//           include: [{ model: User, as: "author" }],
-//         },
-//         {
-//           model: IssueAttachment,
-//           as: "attachments",
-//           include: [{ model: Attachment, as: "attachment" }],
-//         },
-//       ],
-//       order: [["created_at", "DESC"]],
-//     });
-
-//     // ------------------------------------------------------------
-//     // 4️⃣ GET ESCALATED ISSUES (from IssueTier)
-//     // ------------------------------------------------------------
-//     const escalatedIssueTiers = await IssueTier.findAll({
-//       where: {
-//         tier_level: { [Op.in]: siblingNodeIds },
-//         status: { [Op.ne]: "closed" },
-//       },
-//       include: [
-//         {
-//           model: Issue,
-//           as: "issue",
-//           required: true,
-//           where: { reported_by: { [Op.ne]: user_id } }, // <<<< EXCLUDE CREATOR
-//           include: [
-//             { model: Project, as: "project" },
-//             { model: IssueCategory, as: "category" },
-//             { model: IssuePriority, as: "priority" },
-//             { model: HierarchyNode, as: "hierarchyNode" },
-//             { model: User, as: "reporter" },
-//             { model: User, as: "assignee" },
-//             {
-//               model: IssueComment,
-//               as: "comments",
-//               include: [{ model: User, as: "author" }],
-//             },
-//             {
-//               model: IssueAttachment,
-//               as: "attachments",
-//               include: [{ model: Attachment, as: "attachment" }],
-//             },
-//           ],
-//         },
-//       ],
-//     });
-//     // const escalatedIssueTiers = await IssueTier.findAll({
-//     //   where: {
-//     //     tier_level: {
-//     //       [Op.in]: validPairs.map((p) => p.hierarchy_node_id),
-//     //     },
-//     //     status: { [Op.ne]: "closed" },
-//     //   },
-//     //   include: [
-//     //     {
-//     //       model: Issue,
-//     //       as: "issue",
-//     //       where: {
-//     //         reported_by: { [Op.ne]: user_id },
-//     //       },
-//     //       include: [
-//     //         { model: Project, as: "project" },
-//     //         { model: IssueCategory, as: "category" },
-//     //         { model: IssuePriority, as: "priority" },
-//     //         { model: HierarchyNode, as: "hierarchyNode" },
-//     //         { model: User, as: "reporter" },
-//     //         { model: User, as: "assignee" },
-//     //         {
-//     //           model: IssueComment,
-//     //           as: "comments",
-//     //           include: [{ model: User, as: "author" }],
-//     //         },
-//     //         {
-//     //           model: IssueAttachment,
-//     //           as: "attachments",
-//     //           include: [{ model: Attachment, as: "attachment" }],
-//     //         },
-//     //       ],
-//     //     },
-//     //   ],
-//     // });
-
-//     // Extract Issues from IssueTier
-//     // ------------------------------------------------------------
-//     // 2️⃣ GET ESCALATED ISSUES FROM IssueEscalation
-//     //    - to_tier matches hierarchy_node_id
-//     // ------------------------------------------------------------
-//     const escalatedIssuesEscalation = await IssueEscalation.findAll({
-//       where: {
-//         [Op.or]: validPairs.map((pair) => ({
-//           to_tier: pair.hierarchy_node_id,
-//           // Optional: you can filter by project if needed
-//           // project_id: pair.project_id
-//         })),
-//       },
-//       include: [
-//         {
-//           model: Issue,
-//           as: "issue",
-//           where: {
-//             reported_by: { [Op.ne]: user_id },
-//           },
-//           include: [
-//             { model: Project, as: "project" },
-//             { model: IssueCategory, as: "category" },
-//             { model: IssuePriority, as: "priority" },
-//             { model: HierarchyNode, as: "hierarchyNode" },
-//             { model: User, as: "reporter" },
-//             { model: User, as: "assignee" },
-//             {
-//               model: IssueComment,
-//               as: "comments",
-//               include: [{ model: User, as: "author" }],
-//             },
-//             {
-//               model: IssueAttachment,
-//               as: "attachments",
-//               include: [{ model: Attachment, as: "attachment" }],
-//             },
-//           ],
-//         },
-//       ],
-//     });
-
-//     const escalatedIssues = escalatedIssuesEscalation.map((t) => t.issue);
-
-//     // ------------------------------------------------------------
-//     // 5️⃣ MERGE BOTH RESULTS WITHOUT DUPLICATES
-//     // ------------------------------------------------------------
-//     const issuesMap = new Map();
-//     directIssues.forEach((issue) => issuesMap.set(issue.issue_id, issue));
-//     escalatedIssues.forEach((issue) => issuesMap.set(issue.issue_id, issue));
-
-//     const finalIssues = Array.from(issuesMap.values());
-
-//     res.status(200).json({
-//       success: true,
-//       count: finalIssues.length,
-//       issues: finalIssues,
-//     });
-//   } catch (err) {
-//     console.error(err);
-//     res
-//       .status(500)
-//       .json({ message: "Internal server error", error: err.message });
-//   }
-// };
-
 const getIssuesByMultipleHierarchyNodes = async (req, res) => {
   try {
     const { pairs, user_id } = req.params;
@@ -1205,6 +936,17 @@ const getIssuesByMultipleHierarchyNodes = async (req, res) => {
         message:
           "No valid pairs provided. Each pair must have project_id and hierarchy_node_id",
       });
+
+    // Identify ROOT hierarchy nodes
+
+    const hierarchyNodes = await HierarchyNode.findAll({
+      where: {
+        hierarchy_node_id: validPairs.map((p) => p.hierarchy_node_id),
+      },
+      attributes: ["hierarchy_node_id", "parent_id", "project_id"],
+    });
+
+    const rootNodes = hierarchyNodes.filter((node) => node.parent_id === null);
 
     // ------------------------------------------------------------
     // 1️⃣ Build a map: project_id => ONLY descendants (EXCLUDE parent)
@@ -1247,7 +989,7 @@ const getIssuesByMultipleHierarchyNodes = async (req, res) => {
       include: [
         { model: Project, as: "project" },
         { model: IssueCategory, as: "category" },
-        { model: IssuePriority, as: "priority" },
+        { model: IssuePriority, as: "priority", where: { is_active: false } },
         { model: HierarchyNode, as: "hierarchyNode" },
         { model: User, as: "reporter" },
         { model: User, as: "assignee" },
@@ -1265,47 +1007,6 @@ const getIssuesByMultipleHierarchyNodes = async (req, res) => {
       order: [["created_at", "DESC"]],
     });
 
-    // ------------------------------------------------------------
-    // 4️⃣ GET ESCALATED ISSUES (from IssueTier)
-    // ------------------------------------------------------------
-
-    // const escalatedIssueTiers = await IssueTier.findAll({
-    //   where: {
-    //     tier_level: {
-    //       [Op.in]: validPairs.map((p) => p.hierarchy_node_id),
-    //     },
-    //     status: { [Op.ne]: "closed" },
-    //   },
-    //   include: [
-    //     {
-    //       model: Issue,
-    //       as: "issue",
-    //       where: {
-    //         reported_by: { [Op.ne]: user_id },
-    //       },
-    //       include: [
-    //         { model: Project, as: "project" },
-    //         { model: IssueCategory, as: "category" },
-    //         { model: IssuePriority, as: "priority" },
-    //         { model: HierarchyNode, as: "hierarchyNode" },
-    //         { model: User, as: "reporter" },
-    //         { model: User, as: "assignee" },
-    //         {
-    //           model: IssueComment,
-    //           as: "comments",
-    //           include: [{ model: User, as: "author" }],
-    //         },
-    //         {
-    //           model: IssueAttachment,
-    //           as: "attachments",
-    //           include: [{ model: Attachment, as: "attachment" }],
-    //         },
-    //       ],
-    //     },
-    //   ],
-    // });
-
-    // Extract Issues from IssueTier
     // ------------------------------------------------------------
     // 2️⃣ GET ESCALATED ISSUES FROM IssueEscalation
     //    - to_tier matches hierarchy_node_id
@@ -1328,7 +1029,11 @@ const getIssuesByMultipleHierarchyNodes = async (req, res) => {
           include: [
             { model: Project, as: "project" },
             { model: IssueCategory, as: "category" },
-            { model: IssuePriority, as: "priority" },
+            {
+              model: IssuePriority,
+              as: "priority",
+              where: { is_active: false },
+            },
             { model: HierarchyNode, as: "hierarchyNode" },
             { model: User, as: "reporter" },
             { model: User, as: "assignee" },
@@ -1350,11 +1055,54 @@ const getIssuesByMultipleHierarchyNodes = async (req, res) => {
     const escalatedIssues = escalatedIssuesEscalation.map((t) => t.issue);
 
     // ------------------------------------------------------------
+    // 5️⃣ Root priority issues
+    // ------------------------------------------------------------
+
+    let rootPriorityIssues = [];
+
+    if (rootNodes.length > 0) {
+      const rootProjectIds = [
+        ...new Set(rootNodes.map((node) => node.project_id)),
+      ];
+
+      rootPriorityIssues = await Issue.findAll({
+        where: {
+          project_id: rootProjectIds,
+          reported_by: { [Op.ne]: user_id },
+        },
+        include: [
+          { model: Project, as: "project" },
+          {
+            model: IssuePriority,
+            as: "priority",
+            where: { is_active: true }, // ✅ REQUIRED CONDITION
+          },
+          { model: IssueCategory, as: "category" },
+          { model: HierarchyNode, as: "hierarchyNode" },
+          { model: User, as: "reporter" },
+          { model: User, as: "assignee" },
+          {
+            model: IssueComment,
+            as: "comments",
+            include: [{ model: User, as: "author" }],
+          },
+          {
+            model: IssueAttachment,
+            as: "attachments",
+            include: [{ model: Attachment, as: "attachment" }],
+          },
+        ],
+        order: [["created_at", "DESC"]],
+      });
+    }
+
+    // ------------------------------------------------------------
     // 5️⃣ MERGE BOTH RESULTS WITHOUT DUPLICATES
     // ------------------------------------------------------------
     const issuesMap = new Map();
     directIssues.forEach((issue) => issuesMap.set(issue.issue_id, issue));
     escalatedIssues.forEach((issue) => issuesMap.set(issue.issue_id, issue));
+    rootPriorityIssues.forEach((issue) => issuesMap.set(issue.issue_id, issue));
 
     const finalIssues = Array.from(issuesMap.values());
 

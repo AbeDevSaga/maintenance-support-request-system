@@ -69,6 +69,17 @@ module.exports = (sequelize, DataTypes) => {
         as: "resolutions",
       });
 
+      // Issue ↔ IssueReRaises
+      Issue.hasMany(models.IssueReRaise, {
+        foreignKey: "issue_id",
+        as: "reRaises",
+      });
+      // Issue ↔ IssueRejects
+      Issue.hasMany(models.IssueReject, {
+        foreignKey: "issue_id",
+        as: "rejects",
+      });
+
       // Issue ↔ IssueHistory
       Issue.hasMany(models.IssueHistory, {
         foreignKey: "issue_id",
