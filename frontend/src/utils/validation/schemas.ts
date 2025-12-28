@@ -235,6 +235,30 @@ export const issueSchema = createSchema({
 });
 export type IssueFormData = z.infer<typeof issueSchema>;
 
+export const myIssueFormSchema = z.object({
+  project_id: rules.uuid("Project is required"),
+  issue_category_id: rules.uuid("Category is required"),
+  priority_id: rules.uuid("Priority level is required"),
+  issue_occured_time: z.string().min(1, "Date and time is required"),
+  description: rules.textarea,
+  url_path: z.string().url("Invalid URL").optional().or(z.literal("")),
+  // optional but it have to be min 10 characters if it is not empty
+  action_taken: z.string().min(10, "Action taken must be at least 10 characters").max(500, "Action taken must not exceed 500 characters").optional(),
+  action_taken_checkbox: z.boolean().optional(),
+  attachment_id: z.array(z.string()).optional(),
+  hierarchy_node_id: rules.optionalUuid,
+}).superRefine((data, ctx) => {
+  // If action_taken_checkbox is true, action_taken is required
+  if (data.action_taken_checkbox && !data.action_taken) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Please describe the steps you took",
+      path: ["action_taken"],
+    });
+  }
+});
+export type MyIssueFormData = z.infer<typeof myIssueFormSchema>;
+
 /**
  * Organization Schemas
  */
