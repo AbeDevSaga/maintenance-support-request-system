@@ -49,11 +49,9 @@ import {
   SelectContent,
   SelectItem,
 } from "../../components/ui/cn/select";
-import { Label } from "../../components/ui/cn/label";
 import { useGetInstitutesQuery } from "../../redux/services/instituteApi";
 import { useGetRolesQuery } from "../../redux/services/roleApi";
 import { useGetProjectMetricsQuery } from "../../redux/services/projectMetricApi";
-import Switch from "../../components/form/switch/Switch";
 import { FaProjectDiagram } from "react-icons/fa";
 import { useBreadcrumbTitleEffect } from "../../hooks/useBreadcrumbTitleEffect";
 import { ComponentGuard } from "../../components/common/ComponentGuard";
