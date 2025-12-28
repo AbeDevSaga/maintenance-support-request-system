@@ -5,7 +5,11 @@ import { toast } from "sonner";
 import { Label } from "../ui/cn/label";
 import { Button } from "../ui/cn/button";
 import DatePicker from "react-datepicker";
-import { useCreateProjectMutation, useGetProjectByIdQuery, useUpdateProjectMutation } from "../../redux/services/projectApi";
+import {
+  useCreateProjectMutation,
+  useGetProjectByIdQuery,
+  useUpdateProjectMutation,
+} from "../../redux/services/projectApi";
 import { XIcon, CalendarIcon, Check } from "lucide-react";
 
 // Import react-datepicker styles
@@ -46,7 +50,8 @@ export const UpdateProjectModal: React.FC<CreateProjectModalProps> = ({
   const [isActive, setIsActive] = useState(true);
   const [selectAll, setSelectAll] = useState(false);
 
-  const [updateProject, { isLoading: isUpdatingProjectLoading }] = useUpdateProjectMutation();
+  const [updateProject, { isLoading: isUpdatingProjectLoading }] =
+    useUpdateProjectMutation();
   const {
     data: project,
     isLoading: projectLoading,
@@ -78,32 +83,31 @@ export const UpdateProjectModal: React.FC<CreateProjectModalProps> = ({
   });
   useEffect(() => {
     if (!project) return;
-  
+
     reset({
       name: project.name,
       description: project.description ?? "",
       is_active: project.is_active ?? true,
-  
+
       maintenance_start: project.maintenances?.[0]?.start_date
         ? new Date(project.maintenances[0].start_date)
         : undefined,
-  
+
       maintenance_end: project.maintenances?.[0]?.end_date
         ? new Date(project.maintenances[0].end_date)
         : undefined,
-  
-      project_metrics_ids: project.metrics?.map(
-        (metric) => metric.project_metric_id
-      ) ?? [],
+
+      project_metrics_ids:
+        project.metrics?.map((metric) => metric.project_metric_id) ?? [],
     });
   }, [project, reset]);
-  
-  console.log(project,'project');
+
+  console.log(project, "project");
   const maintenanceStart = watch("maintenance_start");
   const maintenanceEnd = watch("maintenance_end");
   const projectMetricsIds = watch("project_metrics_ids") || [];
 
-  const metrics: ProjectMetric[] = metricsData || [];
+  const metrics: ProjectMetric[] = metricsData?.data || [];
 
   // Update selectAll state based on current selection
   useEffect(() => {
@@ -118,11 +122,10 @@ export const UpdateProjectModal: React.FC<CreateProjectModalProps> = ({
     const newIds = currentIds.includes(metricId)
       ? currentIds.filter((id) => id !== metricId)
       : [...currentIds, metricId];
-      setValue("project_metrics_ids", newIds, {
-        shouldValidate: true,
-        shouldDirty: true,
-      });
-      
+    setValue("project_metrics_ids", newIds, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
   };
 
   const handleSelectAll = () => {
@@ -238,7 +241,7 @@ export const UpdateProjectModal: React.FC<CreateProjectModalProps> = ({
     )
   );
   CustomDateInput.displayName = "CustomDateInput";
-  
+
   if (!isOpen) return null;
 
   return (
@@ -471,7 +474,10 @@ export const UpdateProjectModal: React.FC<CreateProjectModalProps> = ({
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting || isUpdatingProjectLoading}>
+          <Button
+            type="submit"
+            disabled={isSubmitting || isUpdatingProjectLoading}
+          >
             {isUpdatingProjectLoading ? "Updating..." : "Update"}
           </Button>
         </div>

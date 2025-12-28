@@ -62,7 +62,7 @@ export const CreateInternalUserModal: React.FC<CreateInternalUserModalProps> = (
     role_type: "internal",
   });
   const roles = rolesResponse?.data || [];
-  const metrics: ProjectMetric[] = metricsData || [];
+  const metrics: ProjectMetric[] = metricsData?.data || [];
 
   const [createUser, { isLoading }] = useCreateUserMutation();
 

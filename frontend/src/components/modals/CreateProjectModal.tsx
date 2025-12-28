@@ -75,7 +75,7 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   const maintenanceEnd = watch("maintenance_end");
   const projectMetricsIds = watch("project_metrics_ids") || [];
 
-  const metrics: ProjectMetric[] = metricsData || [];
+  const metrics: ProjectMetric[] = metricsData?.data || [];
 
   // Update selectAll state based on current selection
   useEffect(() => {

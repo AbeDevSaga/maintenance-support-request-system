@@ -13,11 +13,7 @@ import {
   SelectContent,
   SelectItem,
 } from "../ui/cn/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "../ui/cn/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/cn/popover";
 
 import {
   useCreateUserMutation,
@@ -47,17 +43,14 @@ interface CreateExternalUserModalProps {
   onClose: () => void;
 }
 
-export const CreateExternalUserModal: React.FC<CreateExternalUserModalProps> = ({
-  logged_user_type,
-  user_type_id,
-  inistitute_id,
-  isOpen,
-  onClose,
-}) => {
+export const CreateExternalUserModal: React.FC<
+  CreateExternalUserModalProps
+> = ({ logged_user_type, user_type_id, inistitute_id, isOpen, onClose }) => {
   const { user } = useAuth();
 
-  const { data: institutes, isLoading: loadingInstitutes } =
+  const { data: institutesData, isLoading: loadingInstitutes } =
     useGetInstitutesQuery();
+  const institutes = institutesData?.data || [];
   const { data: rolesResponse } = useGetRolesQuery({
     role_type: "external",
   });
@@ -102,7 +95,7 @@ export const CreateExternalUserModal: React.FC<CreateExternalUserModalProps> = (
 
   const onSubmit = async (data: CreateExternalUserFormData) => {
     const finalInstituteId = user?.institute?.institute_id || data.institute_id;
-    
+
     // Additional validation for institute when it needs to be selected
     if (logged_user_type === "internal_user" && !finalInstituteId) {
       setError("institute_id", {
@@ -128,7 +121,9 @@ export const CreateExternalUserModal: React.FC<CreateExternalUserModalProps> = (
       toast.success("User created successfully!");
       handleClose();
     } catch (error: unknown) {
-      const errorMessage = (error as { data?: { message?: string } })?.data?.message || "Failed to create user";
+      const errorMessage =
+        (error as { data?: { message?: string } })?.data?.message ||
+        "Failed to create user";
       toast.error(errorMessage);
     }
   };
@@ -145,8 +140,7 @@ export const CreateExternalUserModal: React.FC<CreateExternalUserModalProps> = (
   if (!isOpen) return null;
 
   // Determine if institute selection should be shown
-  const showInstituteSelect =
-    logged_user_type === "internal_user";
+  const showInstituteSelect = logged_user_type === "internal_user";
 
   return (
     <div
@@ -187,11 +181,13 @@ export const CreateExternalUserModal: React.FC<CreateExternalUserModalProps> = (
                   }}
                   disabled={loadingInstitutes}
                 >
-                  <SelectTrigger className={`w-[300px] h-12 border px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none ${
-                    errors.institute_id
-                      ? "border-red-300 focus:ring-red-500/20"
-                      : "border-gray-300"
-                  }`}>
+                  <SelectTrigger
+                    className={`w-[300px] h-12 border px-4 py-3 rounded-md focus:ring focus:ring-[#094C81] focus:border-transparent transition-all duration-200 outline-none ${
+                      errors.institute_id
+                        ? "border-red-300 focus:ring-red-500/20"
+                        : "border-gray-300"
+                    }`}
+                  >
                     <SelectValue
                       className="text-sm text-[#094C81] font-medium"
                       placeholder="Select Institute"
@@ -296,7 +292,8 @@ export const CreateExternalUserModal: React.FC<CreateExternalUserModalProps> = (
 
                       {selectedRoles.map((roleId) => {
                         const r = roles.find(
-                          (rr: { role_id: string; name: string }) => rr.role_id === roleId
+                          (rr: { role_id: string; name: string }) =>
+                            rr.role_id === roleId
                         );
                         if (!r) return null;
 
@@ -340,7 +337,10 @@ export const CreateExternalUserModal: React.FC<CreateExternalUserModalProps> = (
                 >
                   <div className="max-h-64 overflow-y-auto">
                     {roles
-                      .filter((r: { role_id: string; name: string }) => !selectedRoles.includes(r.role_id))
+                      .filter(
+                        (r: { role_id: string; name: string }) =>
+                          !selectedRoles.includes(r.role_id)
+                      )
                       .map((r: { role_id: string; name: string }) => (
                         <button
                           key={r.role_id}
@@ -357,7 +357,10 @@ export const CreateExternalUserModal: React.FC<CreateExternalUserModalProps> = (
                           <span className="block truncate">{r.name}</span>
                         </button>
                       ))}
-                    {roles.filter((r: { role_id: string; name: string }) => !selectedRoles.includes(r.role_id)).length === 0 && (
+                    {roles.filter(
+                      (r: { role_id: string; name: string }) =>
+                        !selectedRoles.includes(r.role_id)
+                    ).length === 0 && (
                       <div className="px-3 py-2 text-sm text-gray-400 text-center">
                         All roles selected
                       </div>
@@ -391,4 +394,3 @@ export const CreateExternalUserModal: React.FC<CreateExternalUserModalProps> = (
     </div>
   );
 };
-

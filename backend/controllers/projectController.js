@@ -948,22 +948,99 @@ const assignInternalUsersToProject = async (req, res) => {
 const updateProject = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, is_active } = req.body;
+    const {
+      name,
+      description,
+      is_active,
+      maintenance_start,
+      maintenance_end,
+      project_metrics_ids,
+    } = req.body;
 
+    // Find project
     const project = await Project.findByPk(id);
-    if (!project) return res.status(404).json({ message: "Project not found" });
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
 
-    project.name = name || project.name;
-    project.description = description || project.description;
+    // Update project fields
+    if (name) project.name = name;
+    if (description) project.description = description;
     if (is_active !== undefined) project.is_active = is_active;
 
     await project.save();
+
+    /* -------------------- MAINTENANCE -------------------- */
+    if (maintenance_start !== undefined || maintenance_end !== undefined) {
+      const maintenance = await ProjectMaintenance.findOne({
+        where: { project_id: id },
+      });
+
+      if (maintenance) {
+        maintenance.start_date =
+          maintenance_start !== undefined
+            ? maintenance_start
+            : maintenance.start_date;
+
+        maintenance.end_date =
+          maintenance_end !== undefined
+            ? maintenance_end
+            : maintenance.end_date;
+
+        await maintenance.save();
+      } else {
+        await ProjectMaintenance.create({
+          maintenance_id: uuidv4(),
+          project_id: id,
+          start_date: maintenance_start || null,
+          end_date: maintenance_end || null,
+        });
+      }
+    }
+
+    /* -------------------- METRICS -------------------- */
+    if (project_metrics_ids !== undefined) {
+      if (!Array.isArray(project_metrics_ids)) {
+        return res
+          .status(400)
+          .json({ message: "project_metrics_ids must be an array" });
+      }
+
+      // Validate metrics
+      const metrics = await ProjectMetric.findAll({
+        where: { project_metric_id: project_metrics_ids },
+      });
+
+      if (metrics.length !== project_metrics_ids.length) {
+        return res
+          .status(404)
+          .json({ message: "One or more metrics not found." });
+      }
+
+      // Remove old mappings
+      await ProjectMetricProject.destroy({
+        where: { project_id: id },
+      });
+
+      // Create new mappings
+      if (project_metrics_ids.length > 0) {
+        const metricAssignments = project_metrics_ids.map((metric_id) => ({
+          id: uuidv4(),
+          project_id: id,
+          project_metric_id: metric_id,
+        }));
+
+        await ProjectMetricProject.bulkCreate(metricAssignments);
+      }
+    }
+
     res.status(200).json(project);
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: error.message });
+    res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
   }
 };
 
