@@ -437,6 +437,7 @@ export default function CreateRole() {
                         <SelectTrigger className="h-11">
                           <SelectValue
                             placeholder={roleType ? "" : "Select role type"}
+                            defaultValue={roleType}
                           >
                             {roleType === "internal" && "Internal"}
                             {roleType === "external" && "External"}
