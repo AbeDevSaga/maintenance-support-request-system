@@ -146,11 +146,6 @@ export default function UserList({
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isExternalModalOpen, setIsExternalModalOpen] = useState(false);
   const [isInternalModalOpen, setIsInternalModalOpen] = useState(false);
-  const [pageDetail, setPageDetail] = useState({
-    pageIndex: 0,
-    pageSize: 10,
-    pageCount: 1,
-  });
 
   // --- Convert API data to array ---
   useEffect(() => {
@@ -199,23 +194,22 @@ export default function UserList({
   };
 
   const actions: ActionButton[] = [
-      {
-        label:
-          user_type === "internal_user"
-            ? "Create Internal User"
-            : "Create External User",
-        icon: <Plus className="h-4 w-4" />,
-        onClick: () => {
-          if (user_type === "external_user") {
-            setIsExternalModalOpen(true);
-          } else {
-            setIsInternalModalOpen(true); // internal modal (next step)
-          }
-        },
-        permissions: ["USERS:CREATE"],
+    {
+      label:
+        user_type === "internal_user"
+          ? "Create Internal User"
+          : "Create External User",
+      icon: <Plus className="h-4 w-4" />,
+      onClick: () => {
+        if (user_type === "external_user") {
+          setIsExternalModalOpen(true);
+        } else {
+          setIsInternalModalOpen(true); // internal modal (next step)
+        }
       },
-    ];
-    
+      permissions: ["USERS:CREATE"],
+    },
+  ];
 
   const filterFields: FilterField[] = [
     {
