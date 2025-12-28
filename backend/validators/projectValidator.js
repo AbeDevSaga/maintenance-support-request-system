@@ -68,6 +68,9 @@ const updateProjectSchema = Joi.object({
   name: Joi.string().trim().max(255).optional(),
   description: Joi.string().trim().optional(),
   is_active: Joi.boolean().optional(),
+  project_metrics_ids: Joi.array().items(Joi.string().uuid()).optional(),
+  maintenance_start: Joi.date().optional(),
+  maintenance_end: Joi.date().optional(),
 });
 
 // Schema for project ID param

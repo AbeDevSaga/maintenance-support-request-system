@@ -13,11 +13,7 @@ import {
   SelectContent,
   SelectItem,
 } from "../ui/cn/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "../ui/cn/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "../ui/cn/popover";
 
 import {
   useCreateUserMutation,
@@ -85,7 +81,7 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
     role_type: user_type == "internal_user" ? "internal" : "external",
   });
   const roles = rolesResponse?.data || [];
-  const metrics: ProjectMetric[] = metricsData || [];
+  const metrics: ProjectMetric[] = metricsData?.data || [];
 
   const [createUser, { isLoading }] = useCreateUserMutation();
 
@@ -358,7 +354,9 @@ export const CreateUserModal: React.FC<CreateUserModalProps> = ({
                           <span className="block truncate">{r.name}</span>
                         </button>
                       ))}
-                    {roles.filter((r: any) => !selectedRoles.includes(r.role_id)).length === 0 && (
+                    {roles.filter(
+                      (r: any) => !selectedRoles.includes(r.role_id)
+                    ).length === 0 && (
                       <div className="px-3 py-2 text-sm text-gray-400 text-center">
                         All roles selected
                       </div>
