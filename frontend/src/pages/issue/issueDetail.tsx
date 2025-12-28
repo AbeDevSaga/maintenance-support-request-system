@@ -12,6 +12,8 @@ import {
   ChevronDown,
   ChevronUp,
   X,
+  Check,
+  Lock,
 } from "lucide-react";
 import {
   useConfirmIssueResolvedMutation,
@@ -20,7 +22,7 @@ import {
 import FileViewer from "../../components/common/FileView";
 import { getFileType, getFileUrl } from "../../utils/fileUrl";
 import { useGetCurrentUserQuery } from "../../redux/services/authApi";
-import { canConfirm } from "../../utils/taskHelper";
+import { canConfirm, canReject, canReRaise } from "../../utils/taskHelper";
 import IssueHistoryLog from "../userTasks/IssueHistoryLog";
 import TimelineOpener from "../../components/common/TimelineOpener";
 import { Button } from "../../components/ui/cn/button";
@@ -28,16 +30,20 @@ import { toast } from "sonner";
 import { formatStatus } from "../../utils/statusFormatter";
 import DetailHeader from "../../components/common/DetailHeader";
 import { useBreadcrumbTitleEffect } from "../../hooks/useBreadcrumbTitleEffect";
+import ReRaisePreview from "./ReRaisePreview";
+import ConfirmPreview from "./ConfirmPrivew";
+import RejectPreview from "./RejectPreview";
 
 export default function UserIssueDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: issue, isLoading, isError } = useGetIssueByIdQuery(id!);
   const { t } = useTranslation();
   const [modalImageIndex, setModalImageIndex] = useState<number | null>(null);
+  const [selectedAction, setSelectedAction] = useState<string | null>(null);
   const [confirmIssue, setConfirmIssue] = useState(false);
+  const [reRaiseIssue, setReRaiseIssue] = useState(false);
+  const [rejectIssue, setRejectIssue] = useState(false);
   const [openTimeline, setOpenTimeline] = useState(true);
-  const [confirmIssueResolved, { isLoading: isConfirming }] =
-    useConfirmIssueResolvedMutation();
 
   // State for accordions
   const [expandedEscalations, setExpandedEscalations] = useState<string[]>([]);
@@ -56,6 +62,14 @@ export default function UserIssueDetail() {
 
   useEffect(() => {
     setConfirmIssue(canConfirm(userId, issue?.status, issue));
+  }, [userId, issue?.status, issue]);
+
+  useEffect(() => {
+    setReRaiseIssue(canReRaise(userId, issue?.status, issue));
+  }, [userId, issue?.status, issue]);
+
+  useEffect(() => {
+    setRejectIssue(canReject(userId, issue?.status, issue));
   }, [userId, issue?.status, issue]);
 
   useBreadcrumbTitleEffect(issue?.ticket_number, issue?.id);
@@ -91,9 +105,7 @@ export default function UserIssueDetail() {
     if (expandedEscalations.length === issue.escalations.length) {
       setExpandedEscalations([]);
     } else {
-      setExpandedEscalations(
-        issue.escalations.map((esc) => esc.escalation_id)
-      );
+      setExpandedEscalations(issue.escalations.map((esc) => esc.escalation_id));
     }
   };
 
@@ -103,9 +115,7 @@ export default function UserIssueDetail() {
     if (expandedResolutions.length === issue.resolutions.length) {
       setExpandedResolutions([]);
     } else {
-      setExpandedResolutions(
-        issue.resolutions.map((res) => res.resolution_id)
-      );
+      setExpandedResolutions(issue.resolutions.map((res) => res.resolution_id));
     }
   };
 
@@ -173,15 +183,9 @@ export default function UserIssueDetail() {
   const closeFileViewer = () => setFileViewerState(null);
   const closeModal = () => setModalImageIndex(null);
 
-  const handleConfirmIssueSolved = async () => {
-    if (!id) return;
-    try {
-      const res = await confirmIssueResolved({ issue_id: id }).unwrap();
-      toast.success(res.message || "Status updated to Closed!");
-    } catch (error: any) {
-      toast.error(error?.data?.message || "Error updating status.");
-      console.error(error);
-    }
+  const handleActions = async (value: string) => {
+    setOpenTimeline(false);
+    setSelectedAction(value);
   };
 
   // Format date for display
@@ -195,18 +199,64 @@ export default function UserIssueDetail() {
     });
   };
 
+  // Action buttons configuration with permissions
+  const actionButtons = [
+    {
+      key: "confirm",
+      label: "Confirm Request Resolved",
+      desc: confirmIssue
+        ? 'Start working on this  support request It will update the status to "In progress"'
+        : "Cannot mark in progress - support request is already in progress or you have escalated it",
+      color: "#c2b56cff",
+      bg: "#E7F3FF",
+      border: "#BFD7EA",
+      enabled: confirmIssue,
+      onClick: () => confirmIssue && handleActions("confirm"),
+    },
+    {
+      key: "reject",
+      label: "Reject Request Resolved",
+      desc: rejectIssue
+        ? "You have fixed the support request. Provide resolution detail to close the support request."
+        : "Cannot resolve - only the user who last accepted this support request can resolve it",
+      color: "#1E516A",
+      bg: "#E7F3FF",
+      border: "#BFD7EA",
+      enabled: rejectIssue,
+      onClick: () => rejectIssue && handleActions("reject"),
+    },
+  ];
+  const reRaiseButton = [
+    {
+      key: "re_raise",
+      label: "Re_Raise Request",
+      desc: reRaiseIssue
+        ? "You have fixed the support request. Provide resolution detail to close the support request."
+        : "Cannot resolve - only the user who last accepted this support request can resolve it",
+      color: "#1E516A",
+      bg: "#E7F3FF",
+      border: "#BFD7EA",
+      enabled: reRaiseIssue,
+      onClick: () => reRaiseIssue && handleActions("re_raise"),
+    },
+  ];
+
   if (isLoading) return <div>Loading...</div>;
-  if (isError || !issue) return <div>Error loading  details</div>;
+  if (isError || !issue) return <div>Error loading details</div>;
 
   return (
     <>
-    <DetailHeader breadcrumbs={[
-        { title: "Request List", link: "" },
-        { title: "Request Detail", link: "" },
-      ]} />
+      <DetailHeader
+        breadcrumbs={[
+          { title: "Request List", link: "" },
+          { title: "Request Detail", link: "" },
+        ]}
+      />
       <PageMeta
         title={"Support Request Detail"}
-        description={"Review support request details and take appropriate action"}
+        description={
+          "Review support request details and take appropriate action"
+        }
       />
       <div className="min-h-screen bg-[#F9FBFC] py-6 pb-24 flex flex-col items-start">
         <div
@@ -214,7 +264,7 @@ export default function UserIssueDetail() {
         >
           <div
             className={`w-full transition-all duration-500 ease-in-out  ${
-              openTimeline ? "lg:pr-[360px]" : ""
+              selectedAction || openTimeline ? "lg:pr-[360px]" : ""
             } `}
           >
             <div className="flex flex-col w-full">
@@ -226,24 +276,30 @@ export default function UserIssueDetail() {
                   <p className="text-gray-600">
                     Review support request details and take appropriate action
                   </p>
-                  
                 </div>
                 <div className="flex items-center gap-20">
                   {/* color resolved based on status */}
-                <span className={`text-base bg-green-100 text-green-900 px-2 py-1 rounded-md ${issue.status === "resolved" ? "text-green-900 " : issue.status === "in_progress" ? "text-blue-500" : issue.status === "closed" ? "text-red-500" : "text-gray-500"}`}>
-                  {formatStatus(issue.status)}
-                </span>
-                {!openTimeline && (
-                  <TimelineOpener onOpen={() => setOpenTimeline(true)} />
-                )}
-                {/* status */}
-             
+                  <span
+                    className={`text-base bg-green-100 text-green-900 px-2 py-1 rounded-md ${
+                      issue.status === "resolved"
+                        ? "text-green-900 "
+                        : issue.status === "in_progress"
+                        ? "text-blue-500"
+                        : issue.status === "closed"
+                        ? "text-red-500"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {formatStatus(issue.status)}
+                  </span>
+                  {!openTimeline && (
+                    <TimelineOpener onOpen={() => setOpenTimeline(true)} />
+                  )}
+                  {/* status */}
                 </div>
               </div>
 
-              <div
-                className=" border border-[#BFD7EA] rounded-lg p-6 mb-6"
-              >
+              <div className=" border border-[#BFD7EA] rounded-lg p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                   <div>
                     <p className="font-semibold text-[#1E516A] text-sm">
@@ -283,7 +339,10 @@ export default function UserIssueDetail() {
                     >
                       Priority Level
                     </p>
-                    <p className="font-semibold text-sm" style={{ color: issue.priority?.color_value || "#000" }}>
+                    <p
+                      className="font-semibold text-sm"
+                      style={{ color: issue.priority?.color_value || "#000" }}
+                    >
                       {issue.priority?.name || "N/A"}
                     </p>
                   </div>
@@ -295,11 +354,10 @@ export default function UserIssueDetail() {
                       Description
                     </p>
                     <p className="text-gray-700 text-wrap whitespace-pre-line">
-
-                    {issue.description ||
-                      issue.title ||
-                      "No description provided"}
-                      </p>
+                      {issue.description ||
+                        issue.title ||
+                        "No description provided"}
+                    </p>
                   </div>
 
                   <div className="bg-slate-50 border border-[#BFD7EA] rounded-md p-3 text-gray-700">
@@ -308,10 +366,10 @@ export default function UserIssueDetail() {
                     </p>
                     <p className="text-gray-700 text-wrap whitespace-pre-line">
                       {issue.action_taken || "No action taken yet"}
-                      </p>
+                    </p>
                   </div>
                 </div>
-                
+
                 {/* Support Request Attachments */}
                 {issueFiles.length > 0 && (
                   <div className="bg-white   border-[#BFD7EA] rounded-lg py-3 flex-1 ">
@@ -379,93 +437,109 @@ export default function UserIssueDetail() {
                         transition={{ duration: 0.3 }}
                         className="space-y-4"
                       >
-                        {issue.escalations.map((escalation, escalationIndex) => {
-                          const isExpanded = expandedEscalations.includes(
-                            escalation.escalation_id
-                          );
-                          const escalationFiles =
-                            escalation.attachments?.map((attachment) => ({
-                              url: getFileUrl(attachment.attachment.file_path),
-                              name: attachment.attachment.file_name,
-                              path: attachment.attachment.file_path,
-                              type: getFileType(attachment.attachment.file_name),
-                              uploadedAt: attachment.attachment.created_at,
-                              escalationId: escalation.escalation_id,
-                              escalatedBy: escalation.escalator?.full_name,
-                              escalatedAt: escalation.escalated_at,
-                              reason: escalation.reason,
-                              fromTier: escalation.fromTierNode?.name || "N/A",
-                              toTier: escalation.toTierNode?.name || "EAII",
-                            })) || [];
+                        {issue.escalations.map(
+                          (escalation, escalationIndex) => {
+                            const isExpanded = expandedEscalations.includes(
+                              escalation.escalation_id
+                            );
+                            const escalationFiles =
+                              escalation.attachments?.map((attachment) => ({
+                                url: getFileUrl(
+                                  attachment.attachment.file_path
+                                ),
+                                name: attachment.attachment.file_name,
+                                path: attachment.attachment.file_path,
+                                type: getFileType(
+                                  attachment.attachment.file_name
+                                ),
+                                uploadedAt: attachment.attachment.created_at,
+                                escalationId: escalation.escalation_id,
+                                escalatedBy: escalation.escalator?.full_name,
+                                escalatedAt: escalation.escalated_at,
+                                reason: escalation.reason,
+                                fromTier:
+                                  escalation.fromTierNode?.name || "N/A",
+                                toTier: escalation.toTierNode?.name || "EAII",
+                              })) || [];
 
-                          return (
-                            <div
-                              key={escalation.escalation_id}
-                              className="border border-[#BFD7EA] rounded-lg overflow-hidden"
-                            >
-                              {/* Escalation Header */}
+                            return (
                               <div
-                                className="p-4 cursor-pointer hover:bg-purple-50 transition-colors flex items-center justify-between"
-                                onClick={() =>
-                                  toggleEscalation(escalation.escalation_id)
-                                }
+                                key={escalation.escalation_id}
+                                className="border border-[#BFD7EA] rounded-lg overflow-hidden"
                               >
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                                    <span className="font-bold text-purple-700">
-                                      {escalationIndex + 1}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <h4 className="font-semibold text-[#1E516A]">
-                                      {escalation.fromTierNode?.name || "Unknown"} →{" "}
-                                      {escalation.toTierNode?.name || "EAII"}
-                                    </h4>
-                                    <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                                      <span>
-                                        By: {escalation.escalator?.full_name || "N/A"}
-                                      </span>
-                                      {/* <span>On:</span> */}
-                                      <span>On: {formatDate(escalation.escalated_at)}</span>
-                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                        escalation.status === "completed"
-                                          ? "bg-green-100 text-green-800"
-                                          : escalation.status === "in_progress"
-                                          ? "bg-yellow-100 text-yellow-800"
-                                          : "bg-blue-100 text-blue-800"
-                                      }`}>
-                                        {formatStatus(escalation.status) || "pending"}
-
+                                {/* Escalation Header */}
+                                <div
+                                  className="p-4 cursor-pointer hover:bg-purple-50 transition-colors flex items-center justify-between"
+                                  onClick={() =>
+                                    toggleEscalation(escalation.escalation_id)
+                                  }
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                                      <span className="font-bold text-purple-700">
+                                        {escalationIndex + 1}
                                       </span>
                                     </div>
+                                    <div>
+                                      <h4 className="font-semibold text-[#1E516A]">
+                                        {escalation.fromTierNode?.name ||
+                                          "Unknown"}{" "}
+                                        →{" "}
+                                        {escalation.toTierNode?.name || "EAII"}
+                                      </h4>
+                                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                                        <span>
+                                          By:{" "}
+                                          {escalation.escalator?.full_name ||
+                                            "N/A"}
+                                        </span>
+                                        {/* <span>On:</span> */}
+                                        <span>
+                                          On:{" "}
+                                          {formatDate(escalation.escalated_at)}
+                                        </span>
+                                        <span
+                                          className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                            escalation.status === "completed"
+                                              ? "bg-green-100 text-green-800"
+                                              : escalation.status ===
+                                                "in_progress"
+                                              ? "bg-yellow-100 text-yellow-800"
+                                              : "bg-blue-100 text-blue-800"
+                                          }`}
+                                        >
+                                          {formatStatus(escalation.status) ||
+                                            "pending"}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    {escalationFiles.length > 0 && (
+                                      <span className="text-sm text-gray-500 flex items-center gap-1">
+                                        <FileText className="w-4 h-4" />
+                                        {escalationFiles.length}
+                                      </span>
+                                    )}
+                                    {isExpanded ? (
+                                      <ChevronUp className="w-5 h-5 text-[#6D28D9]" />
+                                    ) : (
+                                      <ChevronDown className="w-5 h-5 text-[#6D28D9]" />
+                                    )}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                  {escalationFiles.length > 0 && (
-                                    <span className="text-sm text-gray-500 flex items-center gap-1">
-                                      <FileText className="w-4 h-4" />
-                                      {escalationFiles.length}
-                                    </span>
-                                  )}
-                                  {isExpanded ? (
-                                    <ChevronUp className="w-5 h-5 text-[#6D28D9]" />
-                                  ) : (
-                                    <ChevronDown className="w-5 h-5 text-[#6D28D9]" />
-                                  )}
-                                </div>
-                              </div>
 
-                              {/* Escalation Content (Accordion Body) */}
-                              <AnimatePresence>
-                                {isExpanded && (
-                                  <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: "auto" }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    transition={{ duration: 0.3 }}
-                                    className="p-4 border-t border-[#BFD7EA] bg-white"
-                                  >
-                                    {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                                {/* Escalation Content (Accordion Body) */}
+                                <AnimatePresence>
+                                  {isExpanded && (
+                                    <motion.div
+                                      initial={{ opacity: 0, height: 0 }}
+                                      animate={{ opacity: 1, height: "auto" }}
+                                      exit={{ opacity: 0, height: 0 }}
+                                      transition={{ duration: 0.3 }}
+                                      className="p-4 border-t border-[#BFD7EA] bg-white"
+                                    >
+                                      {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                                       <div>
                                         <p className="font-semibold text-[#1E516A] text-sm">
                                           Escalated From
@@ -500,58 +574,65 @@ export default function UserIssueDetail() {
                                       </div>
                                     </div> */}
 
-                                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3">
-                                        <p className="font-semibold text-[#1E516A] text-sm mb-1">
-                                          Escalation Reason
-                                        </p>
-                                        <p className="text-gray-700">
-                                          {escalation.reason || "No reason provided"}
-                                        </p>
-                                      </div>
-                                      <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3 text-gray-700">
+                                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3">
+                                          <p className="font-semibold text-[#1E516A] text-sm mb-1">
+                                            Escalation Reason
+                                          </p>
+                                          <p className="text-gray-700">
+                                            {escalation.reason ||
+                                              "No reason provided"}
+                                          </p>
+                                        </div>
+                                        <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3 text-gray-700">
                                           <p className="font-semibold text-[#1E516A] text-sm mb-1">
                                             Reporter Contact
-                                            </p>
+                                          </p>
                                           <p className="text-gray-600">
-                                            {escalation?.escalator?.full_name || "N/A"}
-                                            </p>
-                                            <p className="text-gray-500 text-xs mt-1">
-                                            {escalation?.escalator?.phone_number || "No phone number"}
+                                            {escalation?.escalator?.full_name ||
+                                              "N/A"}
+                                          </p>
+                                          <p className="text-gray-500 text-xs mt-1">
+                                            {escalation?.escalator
+                                              ?.phone_number ||
+                                              "No phone number"}
                                             {/* add email */}
-                                            </p>
-                                             
-                                      </div>
-                                    </div>
-
-                                    {/* Escalation Attachments */}
-                                    {escalationFiles.length > 0 && (
-                                      <div className="mt-4">
-                                        <h5 className="font-semibold text-[#1E516A] mb-3">
-                                          Attachments ({escalationFiles.length})
-                                        </h5>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                          {escalationFiles.map((file, idx) => (
-                                            <FileCard
-                                              key={`${escalation.escalation_id}-${idx}`}
-                                              file={file}
-                                              onOpen={() =>
-                                                openFileViewer(
-                                                  escalationFiles,
-                                                  idx
-                                                )
-                                              }
-                                            />
-                                          ))}
+                                          </p>
                                         </div>
                                       </div>
-                                    )}
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </div>
-                          );
-                        })}
+
+                                      {/* Escalation Attachments */}
+                                      {escalationFiles.length > 0 && (
+                                        <div className="mt-4">
+                                          <h5 className="font-semibold text-[#1E516A] mb-3">
+                                            Attachments (
+                                            {escalationFiles.length})
+                                          </h5>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            {escalationFiles.map(
+                                              (file, idx) => (
+                                                <FileCard
+                                                  key={`${escalation.escalation_id}-${idx}`}
+                                                  file={file}
+                                                  onOpen={() =>
+                                                    openFileViewer(
+                                                      escalationFiles,
+                                                      idx
+                                                    )
+                                                  }
+                                                />
+                                              )
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            );
+                          }
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -606,188 +687,280 @@ export default function UserIssueDetail() {
                         transition={{ duration: 0.3 }}
                         className="space-y-4"
                       >
-                        {issue.resolutions.map((resolution, resolutionIndex) => {
-                          const isExpanded = expandedResolutions.includes(
-                            resolution.resolution_id
-                          );
-                          const resolutionFiles =
-                            resolution.attachments?.map((attachment) => ({
-                              url: getFileUrl(attachment.attachment.file_path),
-                              name: attachment.attachment.file_name,
-                              path: attachment.attachment.file_path,
-                              type: getFileType(attachment.attachment.file_name),
-                              uploadedAt: attachment.attachment.created_at,
-                              resolutionId: resolution.resolution_id,
-                              resolvedBy: resolution.resolver?.full_name,
-                              resolvedAt: resolution.resolved_at,
-                              reason: resolution.reason,
-                            })) || [];
+                        {issue.resolutions.map(
+                          (resolution, resolutionIndex) => {
+                            const isExpanded = expandedResolutions.includes(
+                              resolution.resolution_id
+                            );
+                            const resolutionFiles =
+                              resolution.attachments?.map((attachment) => ({
+                                url: getFileUrl(
+                                  attachment.attachment.file_path
+                                ),
+                                name: attachment.attachment.file_name,
+                                path: attachment.attachment.file_path,
+                                type: getFileType(
+                                  attachment.attachment.file_name
+                                ),
+                                uploadedAt: attachment.attachment.created_at,
+                                resolutionId: resolution.resolution_id,
+                                resolvedBy: resolution.resolver?.full_name,
+                                resolvedAt: resolution.resolved_at,
+                                reason: resolution.reason,
+                              })) || [];
 
-                          return (
-                            <div
-                              key={resolution.resolution_id}
-                              className="border border-[#BFD7EA] rounded-lg overflow-hidden"
-                            >
-                              {/* Resolution Header */}
+                            return (
                               <div
-                                className="p-4 cursor-pointer hover:bg-green-50 transition-colors flex items-center justify-between"
-                                onClick={() =>
-                                  toggleResolution(resolution.resolution_id)
-                                }
+                                key={resolution.resolution_id}
+                                className="border border-[#BFD7EA] rounded-lg overflow-hidden"
                               >
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                                    <span className="font-bold text-green-700">
-                                      {resolutionIndex + 1}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <h4 className="font-semibold text-[#1E516A]">
-                                      {resolution.resolver?.full_name || "Unknown"}
-                                    </h4>
-                                    <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                                      <span>
-                                        By {resolution.resolver?.full_name || "N/A"}
-                                      </span>
-                                      <span>•</span>
-                                      <span>On: {formatDate(resolution.resolved_at)}</span>
-                                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        {resolution.status || "resolved"}
+                                {/* Resolution Header */}
+                                <div
+                                  className="p-4 cursor-pointer hover:bg-green-50 transition-colors flex items-center justify-between"
+                                  onClick={() =>
+                                    toggleResolution(resolution.resolution_id)
+                                  }
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                                      <span className="font-bold text-green-700">
+                                        {resolutionIndex + 1}
                                       </span>
                                     </div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  {resolutionFiles.length > 0 && (
-                                    <span className="text-sm text-gray-500 flex items-center gap-1">
-                                      <FileText className="w-4 h-4" />
-                                      {resolutionFiles.length}
-                                    </span>
-                                  )}
-                                  {isExpanded ? (
-                                    <ChevronUp className="w-5 h-5 text-green-700" />
-                                  ) : (
-                                    <ChevronDown className="w-5 h-5 text-green-700" />
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Resolution Content (Accordion Body) */}
-                              <AnimatePresence>
-                                {isExpanded && (
-                                  <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: "auto" }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                    transition={{ duration: 0.3 }}
-                                    className="p-4 border-t border-[#BFD7EA] bg-white"
-                                  >
-                                    {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                                      <div>
-                                        <p className="font-semibold text-[#1E516A] text-sm">
-                                          Resolved By
-                                        </p>
-                                        <p className="text-gray-700">
-                                          {resolution.resolver?.full_name || "N/A"}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-[#1E516A] text-sm">
-                                          Resolver Position
-                                        </p>
-                                        <p className="text-gray-700">
-                                          {resolution.resolver?.position || "N/A"}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-[#1E516A] text-sm">
-                                          Resolved On
-                                        </p>
-                                        <p className="text-gray-700">
+                                    <div>
+                                      <h4 className="font-semibold text-[#1E516A]">
+                                        {resolution.resolver?.full_name ||
+                                          "Unknown"}
+                                      </h4>
+                                      <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                                        <span>
+                                          By{" "}
+                                          {resolution.resolver?.full_name ||
+                                            "N/A"}
+                                        </span>
+                                        <span>•</span>
+                                        <span>
+                                          On:{" "}
                                           {formatDate(resolution.resolved_at)}
-                                        </p>
-                                      </div>
-                                      <div>
-                                        <p className="font-semibold text-[#1E516A] text-sm">
-                                          Resolution Status
-                                        </p>
-                                        <p className="text-gray-700">
+                                        </span>
+                                        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                           {resolution.status || "resolved"}
-                                        </p>
-                                      </div>
-                                    </div> */}
-
-                                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3">
-                                        <p className="font-semibold text-[#1E516A] text-sm mb-1">
-                                          Resolution Reason
-                                        </p>
-                                        <p className="text-gray-700">
-                                          {resolution.reason || "No reason provided"}
-                                        </p>
-                                      </div>
-                                      <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3">
-                                        <p className="font-semibold text-[#1E516A] text-sm mb-1">
-                                          Resolver Contact
-                                        </p>
-                                        <div className="text-sm">
-                                          <p className="text-gray-600">
-                                            {resolution.resolver?.email || "N/A"}
-                                          </p>
-                                          <p className="text-gray-500 text-xs mt-1">
-                                            {resolution.resolver?.phone_number ||
-                                              "No phone number"}
-                                          </p>
-                                        </div>
+                                        </span>
                                       </div>
                                     </div>
-
-                                    {/* Resolution Attachments */}
+                                  </div>
+                                  <div className="flex items-center gap-3">
                                     {resolutionFiles.length > 0 && (
-                                      <div className="mt-4">
-                                        <h5 className="font-semibold text-[#1E516A] mb-3">
-                                          Attachments ({resolutionFiles.length})
-                                        </h5>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                          {resolutionFiles.map((file, idx) => (
-                                            <FileCard
-                                              key={`${resolution.resolution_id}-${idx}`}
-                                              file={file}
-                                              onOpen={() =>
-                                                openFileViewer(
-                                                  resolutionFiles,
-                                                  idx
-                                                )
-                                              }
-                                            />
-                                          ))}
+                                      <span className="text-sm text-gray-500 flex items-center gap-1">
+                                        <FileText className="w-4 h-4" />
+                                        {resolutionFiles.length}
+                                      </span>
+                                    )}
+                                    {isExpanded ? (
+                                      <ChevronUp className="w-5 h-5 text-green-700" />
+                                    ) : (
+                                      <ChevronDown className="w-5 h-5 text-green-700" />
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Resolution Content (Accordion Body) */}
+                                <AnimatePresence>
+                                  {isExpanded && (
+                                    <motion.div
+                                      initial={{ opacity: 0, height: 0 }}
+                                      animate={{ opacity: 1, height: "auto" }}
+                                      exit={{ opacity: 0, height: 0 }}
+                                      transition={{ duration: 0.3 }}
+                                      className="p-4 border-t border-[#BFD7EA] bg-white"
+                                    >
+                                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3">
+                                          <p className="font-semibold text-[#1E516A] text-sm mb-1">
+                                            Resolution Reason
+                                          </p>
+                                          <p className="text-gray-700">
+                                            {resolution.reason ||
+                                              "No reason provided"}
+                                          </p>
+                                        </div>
+                                        <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3">
+                                          <p className="font-semibold text-[#1E516A] text-sm mb-1">
+                                            Resolver Contact
+                                          </p>
+                                          <div className="text-sm">
+                                            <p className="text-gray-600">
+                                              {resolution.resolver?.email ||
+                                                "N/A"}
+                                            </p>
+                                            <p className="text-gray-500 text-xs mt-1">
+                                              {resolution.resolver
+                                                ?.phone_number ||
+                                                "No phone number"}
+                                            </p>
+                                          </div>
                                         </div>
                                       </div>
-                                    )}
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </div>
-                          );
-                        })}
+
+                                      {/* Resolution Attachments */}
+                                      {resolutionFiles.length > 0 && (
+                                        <div className="mt-4">
+                                          <h5 className="font-semibold text-[#1E516A] mb-3">
+                                            Attachments (
+                                            {resolutionFiles.length})
+                                          </h5>
+                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            {resolutionFiles.map(
+                                              (file, idx) => (
+                                                <FileCard
+                                                  key={`${resolution.resolution_id}-${idx}`}
+                                                  file={file}
+                                                  onOpen={() =>
+                                                    openFileViewer(
+                                                      resolutionFiles,
+                                                      idx
+                                                    )
+                                                  }
+                                                />
+                                              )
+                                            )}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            );
+                          }
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
               )}
 
-              {confirmIssue && (
+              {issue?.status === "resolved" && (
                 <>
                   <h3 className="text-[#1E516A] font-semibold text-lg mt-4 mb-3 flex items-center gap-2">
-                    🎯 Confirm Request is resolved
+                    🎯 Select Action
                   </h3>
+
                   <div className="flex flex-col md:flex-row gap-4 mb-6">
-                    <Button
-                      onClick={handleConfirmIssueSolved}
-                      disabled={isConfirming}
-                    >
-                      {isConfirming ? "Confirming..." : "Confirm Resolved"}
-                    </Button>
+                    {actionButtons.map((action) => (
+                      <button
+                        key={action.key}
+                        onClick={action.onClick}
+                        disabled={!action.enabled}
+                        className={`flex-1 text-left border rounded-lg p-4 transition-all relative ${
+                          selectedAction === action.key
+                            ? `border-[${action.border}] bg-[${action.bg}]`
+                            : action.enabled
+                            ? "border-[#D5E3EC] bg-white hover:bg-gray-50 cursor-pointer"
+                            : "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
+                        }`}
+                      >
+                        {!action.enabled && (
+                          <div className="absolute top-2 right-2">
+                            <Lock className="w-4 h-4 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 mb-1">
+                          <div
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              selectedAction === action.key
+                                ? `border-[${action.color}]`
+                                : action.enabled
+                                ? "border-gray-300"
+                                : "border-gray-200"
+                            }`}
+                          >
+                            {selectedAction === action.key && (
+                              <Check
+                                className="w-4 h-4"
+                                style={{ color: action.color }}
+                              />
+                            )}
+                          </div>
+                          <p
+                            className={`font-semibold ${
+                              action.enabled
+                                ? "text-[#1E516A]"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {action.label}
+                          </p>
+                        </div>
+                        <p
+                          className={`text-sm ${
+                            action.enabled ? "text-gray-600" : "text-gray-400"
+                          }`}
+                        >
+                          {action.desc}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+              {issue?.status === "closed" && (
+                <>
+                  <div className="flex flex-col md:flex-row gap-4 mb-6">
+                    {reRaiseButton.map((action) => (
+                      <button
+                        key={action.key}
+                        onClick={action.onClick}
+                        disabled={!action.enabled}
+                        className={`flex-1 text-left border rounded-lg p-4 transition-all relative ${
+                          selectedAction === action.key
+                            ? `border-[${action.border}] bg-[${action.bg}]`
+                            : action.enabled
+                            ? "border-[#D5E3EC] bg-white hover:bg-gray-50 cursor-pointer"
+                            : "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
+                        }`}
+                      >
+                        {!action.enabled && (
+                          <div className="absolute top-2 right-2">
+                            <Lock className="w-4 h-4 text-gray-400" />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 mb-1">
+                          <div
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              selectedAction === action.key
+                                ? `border-[${action.color}]`
+                                : action.enabled
+                                ? "border-gray-300"
+                                : "border-gray-200"
+                            }`}
+                          >
+                            {selectedAction === action.key && (
+                              <Check
+                                className="w-4 h-4"
+                                style={{ color: action.color }}
+                              />
+                            )}
+                          </div>
+                          <p
+                            className={`font-semibold ${
+                              action.enabled
+                                ? "text-[#1E516A]"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {action.label}
+                          </p>
+                        </div>
+                        <p
+                          className={`text-sm ${
+                            action.enabled ? "text-gray-600" : "text-gray-400"
+                          }`}
+                        >
+                          {action.desc}
+                        </p>
+                      </button>
+                    ))}
                   </div>
                 </>
               )}
@@ -800,8 +973,9 @@ export default function UserIssueDetail() {
               <div className="bg-white rounded-lg w-full max-w-6xl h-[90vh] flex flex-col">
                 <div className="flex justify-between items-center p-4 border-b">
                   <h3 className="text-lg font-semibold text-[#1E516A]">
-                    File Preview <span className="text-xs text-gray-500">
-                    ({fileViewerState.files[fileViewerState.index].name})
+                    File Preview{" "}
+                    <span className="text-xs text-gray-500">
+                      ({fileViewerState.files[fileViewerState.index].name})
                     </span>
                   </h3>
                   <button
@@ -809,7 +983,6 @@ export default function UserIssueDetail() {
                     className="p-2 hover:bg-gray-100 rounded-full"
                   >
                     <X className="w-5 h-5" />
-
                   </button>
                 </div>
                 <div className="flex-1 p-4 flex flex-col">
@@ -850,8 +1023,7 @@ export default function UserIssueDetail() {
                               ? prev
                               : {
                                   ...prev,
-                                  index:
-                                    (prev.index + 1) % prev.files.length,
+                                  index: (prev.index + 1) % prev.files.length,
                                 }
                           )
                         }
@@ -911,6 +1083,26 @@ export default function UserIssueDetail() {
           )}
 
           <AnimatePresence>
+            {selectedAction === "confirm" && (
+              <ConfirmPreview
+                issue_id={id || ""}
+                onClose={() => setSelectedAction("")}
+              />
+            )}
+            {selectedAction === "reject" && (
+              <RejectPreview
+                issue_id={id || ""}
+                rejected_by={userId}
+                onClose={() => setSelectedAction("")}
+              />
+            )}
+            {selectedAction === "re_raise" && (
+              <ReRaisePreview
+                issue_id={id || ""}
+                re_raised_by={userId}
+                onClose={() => setSelectedAction("")}
+              />
+            )}{" "}
             {openTimeline && (
               <IssueHistoryLog
                 logs={issue?.history || []}
@@ -923,5 +1115,3 @@ export default function UserIssueDetail() {
     </>
   );
 }
-
-

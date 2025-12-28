@@ -28,6 +28,8 @@ const issueRoutes = require("./routers/issueRoutes");
 const issueAssignmentRoutes = require("./routers/issueAssignmentRoutes");
 const issueEscalationRoutes = require("./routers/issueEscaltionRoute");
 const issueResolutionRoutes = require("./routers/issueResolutionRoutes");
+const issueReRaiseRoutes = require("./routers/issueReRaiseRoutes");
+const issueRejectRoutes = require("./routers/issueRejectRoutes");
 
 const instituteRoute = require("./routers/instituteRoutes");
 const instituteProjectsRoute = require("./routers/instituteProjectRoutes");
@@ -164,6 +166,8 @@ app.use("/api/issues", issueRoutes);
 app.use("/api/assignments", issueAssignmentRoutes);
 app.use("/api/issue-escalations", issueEscalationRoutes);
 app.use("/api/issue-resolutions", issueResolutionRoutes);
+app.use("/api/issue-re-raises", issueReRaiseRoutes);
+app.use("/api/issue-rejects", issueRejectRoutes);
 app.use("/api/internal-nodes", internalNodeRoute);
 // /api/internal-nodes
 

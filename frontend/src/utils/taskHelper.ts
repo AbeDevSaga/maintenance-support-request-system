@@ -4,7 +4,11 @@ export const canMarkInProgress = (
   object: any
 ): boolean => {
   // Check if status is "in progress"
-  if (issueStatus === "in_progress" || issueStatus === "resolved") {
+  if (
+    issueStatus === "in_progress" ||
+    issueStatus === "resolved" ||
+    issueStatus === "closed"
+  ) {
     return false;
   }
 
@@ -146,6 +150,46 @@ export const canConfirm = (
   return false;
 };
 
+export const canReject = (
+  user_id: string,
+  issueStatus: string,
+  object: any
+): boolean => {
+  // Check if status is not "in progress"
+  if (issueStatus !== "resolved") {
+    return false;
+  }
+
+  // console.log("esc object:", object);
+
+  // Check if user_id exists in any escalation
+  if (object?.reporter === user_id || object?.reporter?.user_id === user_id) {
+    return true;
+  }
+
+  return false;
+};
+
+export const canReRaise = (
+  user_id: string,
+  issueStatus: string,
+  object: any
+): boolean => {
+  // Check if status is not "in progress"
+  if (issueStatus !== "closed") {
+    return false;
+  }
+
+  // console.log("esc object:", object);
+
+  // Check if user_id exists in any escalation
+  if (object?.reporter === user_id || object?.reporter?.user_id === user_id) {
+    return true;
+  }
+
+  return false;
+};
+
 // Internal Controllers
 export const canAssign = (
   user_id: string,
@@ -201,7 +245,6 @@ export const canInternallyMarkInProgress = (
     );
   // console.log("acceptedActions:", acceptedActions);
 
-  
   // Check if user_id exists in any accepted actions
   if (acceptedActions?.some((action: any) => action.user_id === user_id)) {
     return false;
