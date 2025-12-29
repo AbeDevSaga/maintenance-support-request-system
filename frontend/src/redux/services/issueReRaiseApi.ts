@@ -27,6 +27,7 @@ export interface CreateReRaiseDto {
   issue_id: string;
   reason?: string;
   re_raised_by: string;
+  re_raised_at: string;
   attachment_ids?: string[];
 }
 

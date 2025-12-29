@@ -13,6 +13,12 @@ const reRaiseIssueSchema = Joi.object({
     "string.uuid": "Re-raised by must be a valid UUID.",
   }),
 
+  re_raised_at: Joi.date().iso().required().messages({
+    "any.required": "Re-raised date is required.",
+    "date.base": "Re-raised date must be a valid date.",
+    "date.format": "Re-raised date must be in ISO format.",
+  }),
+
   attachment_ids: Joi.array().items(Joi.string().uuid()).optional().messages({
     "array.base": "Attachment IDs must be an array of UUIDs.",
   }),
