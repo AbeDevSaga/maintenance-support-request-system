@@ -19,7 +19,8 @@ const reRaiseIssue = async (req, res) => {
   const t = await sequelize.transaction();
 
   try {
-    const { issue_id, reason, re_raised_by, attachment_ids } = req.body;
+    const { issue_id, reason, re_raised_by, re_raised_at, attachment_ids } =
+      req.body;
 
     // 1. Validate Issue
     const issue = await Issue.findByPk(issue_id);
@@ -43,8 +44,8 @@ const reRaiseIssue = async (req, res) => {
         re_raise_id,
         issue_id,
         reason,
-        re_raised_by: issue.re_raised_by || null,
-        re_raised_at: issue.re_raised_at || null,
+        re_raised_by: user.user_id,
+        re_raised_at: new Date(re_raised_at),
       },
       { transaction: t }
     );
