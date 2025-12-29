@@ -230,7 +230,10 @@ export const issueApi = baseApi.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["Issue"], // invalidate issues to refresh queries
+      invalidatesTags: (result, error, { issue_id }) => [
+        { type: "Issue", id: issue_id },
+        "Issue",
+      ],
     }),
 
     confirmIssueResolved: builder.mutation<
@@ -241,8 +244,11 @@ export const issueApi = baseApi.injectEndpoints({
         url: `/issues/confirm`, // ensure this matches your backend route
         method: "POST",
         body: data,
-      }),
-      invalidatesTags: ["Issue"], // refresh related queries
+        }),
+        invalidatesTags: (result, error, { issue_id }) => [
+          { type: "Issue", id: issue_id },
+          "Issue",
+        ],
     }),
 
     updateIssue: builder.mutation<
@@ -254,7 +260,10 @@ export const issueApi = baseApi.injectEndpoints({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: (result, error, { id }) => [{ type: "Issue", id }],
+      invalidatesTags: (result, error, { id }) => [
+        { type: "Issue", id },
+        "Issue",
+      ],
     }),
     deleteIssue: builder.mutation<{ message: string }, string>({
       query: (id) => ({
