@@ -63,6 +63,7 @@ import TrackPageDetail from "./pages/home/TrackPageDetail";
 import OrganizationProfile from "./pages/profile/OrganizationProfile";
 import ExternalLogin from "./components/auth/ExternalLogin";
 import Notifications from "./pages/notification/Notifications";
+import ChangePassword from "./components/auth/ChangePassword";
 const AuthLoader = () => {
   return (
     <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
@@ -87,7 +88,6 @@ const PublicRoute = ({ children }: { children: ReactNode }) => {
 
 function AppContent() {
   const { loading } = useAuth();
-
   if (loading) {
     return <AuthLoader />;
   }
@@ -201,6 +201,12 @@ function AppContent() {
               <PublicRoute>
                 <ExternalLogin />
               </PublicRoute>
+            }
+          />
+          <Route
+            path="/change_password"
+            element={
+                <ChangePassword />
             }
           />
           {/* Internal Routes */}
