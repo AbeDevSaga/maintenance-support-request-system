@@ -607,11 +607,11 @@ const updateUserPassword = async (req, res) => {
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const { current_password, new_password } = req.body;
+    const { new_password } = req.body;
 
-    if (!current_password || !new_password) {
+    if (!new_password) {
       return res.status(400).json({
-        message: "Current password and new password are required",
+        message: "new password are required",
       });
     }
 
@@ -621,12 +621,6 @@ const updateUserPassword = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
-    }
-
-    // Verify current password
-    const isMatch = await bcrypt.compare(current_password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Current password is incorrect" });
     }
 
     // Hash new password

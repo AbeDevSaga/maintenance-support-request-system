@@ -3,7 +3,6 @@ import { baseApi } from "../baseApi";
 import type { AuthResponse, LoginCredentials } from "../../types/auth";
 
 type UpdatePasswordPayload = {
-  current_password: string;
   new_password: string;
 };
 
@@ -73,5 +72,9 @@ export const authApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useLoginMutation, useLogoutMutation, useGetCurrentUserQuery } =
-  authApi;
+export const {
+  useLoginMutation,
+  useLogoutMutation,
+  useGetCurrentUserQuery,
+  useUpdatePasswordMutation,
+} = authApi;

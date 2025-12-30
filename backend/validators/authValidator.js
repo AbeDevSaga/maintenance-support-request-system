@@ -20,10 +20,6 @@ const logoutSchema = Joi.object({
 /*
  Update Password Schema */
 const updatePasswordSchema = Joi.object({
-  current_password: Joi.string().min(6).required().messages({
-    "string.min": "Current password must be at least 6 characters long",
-    "any.required": "Current password is required",
-  }),
   new_password: Joi.string().min(6).required().messages({
     "string.min": "New password must be at least 6 characters long",
     "any.required": "New password is required",
