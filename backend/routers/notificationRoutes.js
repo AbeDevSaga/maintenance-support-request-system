@@ -292,6 +292,26 @@ router.get(
   controller.getNotificationsByUserId
 );
 
+/**
+ * @swagger
+ * /api/notifications/mark-all-read:
+ *   post:
+ *     summary: Mark all notifications as read for current user
+ *     tags: [Notifications]
+ *     responses:
+ *       200:
+ *         description: All notifications marked as read
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  "/mark-all-read",
+  authenticateToken,
+  controller.markAllNotificationsAsRead
+);
+
 // ================================
 // POST ROUTES
 // ================================
@@ -320,25 +340,10 @@ router.get(
  */
 router.post(
   "/mark-read",
+  authenticateToken,
   validateMarkAsRead,
   controller.markNotificationAsRead
 );
-
-/**
- * @swagger
- * /api/notifications/mark-all-read:
- *   post:
- *     summary: Mark all notifications as read for current user
- *     tags: [Notifications]
- *     responses:
- *       200:
- *         description: All notifications marked as read
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Internal server error
- */
-router.post("/mark-all-read", controller.markAllNotificationsAsRead);
 
 /**
  * @swagger
