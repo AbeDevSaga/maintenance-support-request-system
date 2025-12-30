@@ -8,10 +8,7 @@ import { useTranslation } from "react-i18next";
 import Login_bg from "../../assets/login_bg.png";
 import { ArrowLeftIcon, EyeOffIcon } from "lucide-react";
 import { EyeOpenIcon } from "@radix-ui/react-icons";
-import {
-  signInSchema,
-  type SignInFormData,
-} from "../../utils/validation";
+import { signInSchema, type SignInFormData } from "../../utils/validation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useAuth } from "../../contexts/AuthContext"; // <-- IMPORTANT: Use AuthContext
@@ -32,20 +29,28 @@ export default function Login() {
     resolver: zodResolver(signInSchema),
   });
 
-  const from = location.state?.from?.pathname || "/dashboard";
+  const from = "/dashboard";
 
   const onSubmit = async (data: SignInFormData) => {
     try {
       clearError(); // Clear any previous errors
-      await login(data); // Use AuthContext login
+      const response = await login(data); // Use AuthContext login
 
+      if (!response) return;
+      console.log("Login response:", response);
+
+      if (response.user?.is_first_logged_in) {
+        navigate("/change_password");
+        return;
+      }
       // AuthContext will update its state, and AppLayout will detect it
       // Navigate to the intended destination or dashboard
       navigate(from, { replace: true });
     } catch (err) {
       console.error("Login error:", err);
       // Error is already set in AuthContext, but you can also set form error
-      const errorMessage = err instanceof Error ? err.message : "An error occurred";
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
       setFormError("root", { message: errorMessage });
     }
   };

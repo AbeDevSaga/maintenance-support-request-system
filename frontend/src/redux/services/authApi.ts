@@ -36,6 +36,7 @@ export const authApi = baseApi.injectEndpoints({
       query: () => ({
         url: "/auth/logout",
         method: "POST",
+        body: {},
       }),
       async onQueryStarted(_, { queryFulfilled }) {
         try {
@@ -72,5 +73,9 @@ export const authApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useLoginMutation, useLogoutMutation, useGetCurrentUserQuery, useUpdatePasswordMutation } =
-  authApi;
+export const {
+  useLoginMutation,
+  useLogoutMutation,
+  useGetCurrentUserQuery,
+  useUpdatePasswordMutation,
+} = authApi;
