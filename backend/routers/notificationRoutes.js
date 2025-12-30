@@ -242,39 +242,6 @@ const { authenticateToken } = require("../middlewares/authMiddleware");
  */
 router.get("/stats", authenticateToken, controller.getNotificationStats);
 
-// ================================
-// GET ROUTES
-// ================================
-
-/**
- * @swagger
- * /api/notifications/{id}:
- *   get:
- *     summary: Get notification by ID
- *     tags: [Notifications]
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *           format: uuid
- *         required: true
- *     responses:
- *       200:
- *         description: Notification details
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Notification'
- *       400:
- *         description: Validation error
- *       404:
- *         description: Notification not found
- *       500:
- *         description: Internal server error
- */
-router.get("/:id", controller.getNotificationById);
-
 /**
  * @swagger
  * /api/notifications/user/{user_id}:
@@ -512,6 +479,39 @@ router.post(
   validateSendGeneralNotification,
   controller.sendGeneralNotification
 );
+
+// ================================
+// GET ROUTES
+// ================================
+
+/**
+ * @swagger
+ * /api/notifications/{id}:
+ *   get:
+ *     summary: Get notification by ID
+ *     tags: [Notifications]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         required: true
+ *     responses:
+ *       200:
+ *         description: Notification details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Notification'
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: Notification not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get("/:id", controller.getNotificationById);
 
 // ================================
 // DELETE ROUTES
