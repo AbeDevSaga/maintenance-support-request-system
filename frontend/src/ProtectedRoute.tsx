@@ -17,7 +17,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRole,
   fallbackPath = "/dashboard",
 }) => {
-  const { isAuthenticated, loading, hasPermission, hasAnyPermission, hasRole } =
+  const { isAuthenticated,user, loading, hasPermission, hasAnyPermission, hasRole } =
     useAuth();
   const location = useLocation();
 
@@ -35,7 +35,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
-
+  if (user?.is_first_logged_in) {
+    return <Navigate to="/change_password" replace />;
+  }
   // 3️⃣ role requirement
   if (requiredRole && !hasRole(requiredRole)) {
     return <Navigate to={fallbackPath} replace />;
