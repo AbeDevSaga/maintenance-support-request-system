@@ -1108,38 +1108,46 @@ class NotificationService {
       }
 
       // 6. Create notifications for all recipients
-      const notifications = recipients.map((recipient) => ({
-        notification_id: uuidv4(),
-        type: notificationType,
-        sender_id: actionUser ? actionUser.user_id : assigned_by || null,
-        receiver_id: recipient.user.user_id,
-        issue_id,
-        project_id: issue.project_id,
-        title: notificationTitle,
-        message: recipient.customMessage || notificationMessage,
-        priority: "MEDIUM",
-        data: {
-          issue_ticket: issue.ticket_number,
-          issue_title: issue.title,
-          action_type: action_type,
-          action_by: actionUser
-            ? actionUser.full_name
-            : assigner?.full_name || "System",
-          action_by_email: actionUser
-            ? actionUser.email
-            : assigner?.email || null,
-          project_name: issue.project?.name,
-          assignee_name: assignee?.full_name,
-          assignee_email: assignee?.email,
-          assigner_name: assigner?.full_name,
-          assigner_email: assigner?.email,
-          remarks: remarks || null,
-          reason: reason || null,
-          assignment_id: assignment_id || null,
-          removed_by: removed_by || null,
-        },
-        created_at: new Date(),
-      }));
+      const notifications = recipients.map((recipient) => {
+        const notification = {
+          notification_id: uuidv4(),
+          type: notificationType,
+          sender_id: actionUser ? actionUser.user_id : assigned_by || null,
+          receiver_id: recipient.user.user_id,
+          project_id: issue.project_id,
+          title: notificationTitle,
+          message: recipient.customMessage || notificationMessage,
+          priority: "MEDIUM",
+          data: {
+            issue_ticket: issue.ticket_number,
+            issue_title: issue.title,
+            action_type,
+            action_by: actionUser
+              ? actionUser.full_name
+              : assigner?.full_name || "System",
+            action_by_email: actionUser
+              ? actionUser.email
+              : assigner?.email || null,
+            project_name: issue.project?.name,
+            assignee_name: assignee?.full_name,
+            assignee_email: assignee?.email,
+            assigner_name: assigner?.full_name,
+            assigner_email: assigner?.email,
+            remarks: remarks || null,
+            reason: reason || null,
+            assignment_id: assignment_id || null,
+            removed_by: removed_by || null,
+          },
+          created_at: new Date(),
+        };
+
+        // ✅ ONLY include issue_id when NOT UNASSIGNED
+        if (action_type !== "UNASSIGNED") {
+          notification.issue_id = issue_id;
+        }
+
+        return notification;
+      });
 
       // 7. Bulk create notifications
       await Notification.bulkCreate(notifications, { transaction: t });
