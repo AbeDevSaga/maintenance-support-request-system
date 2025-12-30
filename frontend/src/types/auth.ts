@@ -6,6 +6,7 @@ export interface User {
   position?: string;
   profile_image?: string;
   user_type: string;
+  is_first_logged_in: boolean;
   institute?: {
     institute_id: string;
     name: string;

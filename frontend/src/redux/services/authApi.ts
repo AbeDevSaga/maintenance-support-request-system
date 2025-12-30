@@ -2,6 +2,10 @@
 import { baseApi } from "../baseApi";
 import type { AuthResponse, LoginCredentials } from "../../types/auth";
 
+type UpdatePasswordPayload = {
+  new_password: string;
+};
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, LoginCredentials>({
@@ -32,6 +36,7 @@ export const authApi = baseApi.injectEndpoints({
       query: () => ({
         url: "/auth/logout",
         method: "POST",
+        body: {},
       }),
       async onQueryStarted(_, { queryFulfilled }) {
         try {
@@ -52,8 +57,25 @@ export const authApi = baseApi.injectEndpoints({
       }),
       providesTags: ["User"],
     }),
+
+    /* Update Password */
+    updatePassword: builder.mutation<
+      { success: boolean; message: string },
+      UpdatePasswordPayload
+    >({
+      query: (payload) => ({
+        url: "/auth/update-password",
+        method: "PUT",
+        body: payload,
+      }),
+      invalidatesTags: ["User"],
+    }),
   }),
 });
 
-export const { useLoginMutation, useLogoutMutation, useGetCurrentUserQuery } =
-  authApi;
+export const {
+  useLoginMutation,
+  useLogoutMutation,
+  useGetCurrentUserQuery,
+  useUpdatePasswordMutation,
+} = authApi;
