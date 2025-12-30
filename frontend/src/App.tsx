@@ -62,6 +62,7 @@ import TrackPage from "./pages/home/TrackPage";
 import TrackPageDetail from "./pages/home/TrackPageDetail";
 import OrganizationProfile from "./pages/profile/OrganizationProfile";
 import ExternalLogin from "./components/auth/ExternalLogin";
+import Notifications from "./pages/notification/Notifications";
 const AuthLoader = () => {
   return (
     <div className="fixed inset-0 bg-white bg-opacity-80 flex justify-center items-center z-50">
@@ -175,7 +176,7 @@ function AppContent() {
             {/* Metrics */}
             <Route path="/human_resource" element={<Metrics />} />
             <Route path="/basedata" element={<BaseData />} />
-
+            <Route path="/notifications" element={<Notifications />} />
             <Route
               path="/roles"
               element={
