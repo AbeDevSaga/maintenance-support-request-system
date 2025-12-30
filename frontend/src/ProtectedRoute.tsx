@@ -36,6 +36,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   if (user?.is_first_logged_in) {
+    console.log(user,user.is_first_logged_in,"user in protected route");
     return <Navigate to="/change_password" replace />;
   }
   // 3️⃣ role requirement

@@ -9,6 +9,7 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useUpdatePasswordMutation } from "../../redux/services/authApi";
 type ChangePasswordForm = {
   currentPassword: string;
   newPassword: string;
@@ -19,6 +20,7 @@ export default function ChangePassword() {
   const {  logout } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const [updatePassword] = useUpdatePasswordMutation();
   const {
     register,
     handleSubmit,
@@ -30,13 +32,23 @@ export default function ChangePassword() {
 
   const onSubmit = async (data: ChangePasswordForm) => {
     console.log(data,"data in change password");
-    // await changePassword({
-    //   currentPassword: data.currentPassword,
-    //   newPassword: data.newPassword,
-    // });
+    try {
+      const response = await updatePassword({
+        new_password: data.newPassword,
+      });
+      if (response.error) {
+        toast.error(response.error.data.message);
+      } else {
+        await logout();
+        console.log("logged out successfully and navigating to login");
+        toast.success("Password changed successfully");
+        navigate("/login");
 
-    toast.success("Password changed successfully");
-    navigate("/login");
+      }
+    } catch (error: any) {
+      toast.error(error.data.message);
+    }
+    
   };
 
   return (
