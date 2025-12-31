@@ -124,11 +124,11 @@ export const navItems: NavItem[] = [
         allowedFor: ["external_user", "internal_user"],
         permission: ["ORGANIZATIONS:UPDATE"],
       },
-      {
-        name: "Settings",
-        path: "/settings",
-        allowedFor: ["external_user", "internal_user"],
-      },
+      // {
+      //   name: "Settings",
+      //   path: "/settings",
+      //   allowedFor: ["external_user", "internal_user"],
+      // },
     ],
     allowedFor: ["external_user", "internal_user"],
   },
