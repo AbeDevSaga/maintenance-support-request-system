@@ -14,6 +14,7 @@ const {
   InternalNode,
   sequelize,
 } = require("../models");
+const { sendEmail } = require("../utils/sendEmail");
 
 class NotificationService {
   /**
@@ -238,6 +239,33 @@ class NotificationService {
       // 9. Bulk create notifications
       await Notification.bulkCreate(notifications, { transaction: t });
 
+      for (const { user } of uniqueParentUsers) {
+        await sendEmail(
+          user.email,
+          `New Request  in Child Hierarchy – ${project?.name}`,
+          `Dear ${user.full_name},
+          This is to inform you that a new request has been reported in a child hierarchy under your supervision.
+          Project: ${project?.name}
+          Reported By: ${sender.full_name} (${sender.email})
+          Sender Hierarchy: ${senderHierarchyNode.name}
+          Your Hierarchy: ${parentHierarchyNode.name}
+          ${
+            issueDetails
+              ? `
+          Request Details:
+          - Ticket Number: ${issueDetails.ticket_number}
+          `
+              : ""
+          }
+          Message:
+          ${
+            message ||
+            "Please review the request and take the necessary action."
+          }
+          Regards, ${process.env.APP_NAME} Team`
+        );
+      }
+
       if (shouldCommit) await t.commit();
 
       return {
@@ -351,6 +379,26 @@ class NotificationService {
           created_at: new Date(),
         },
         { transaction: t }
+      );
+
+      // Send email to issue creator
+      await sendEmail(
+        issue.reporter.email,
+        `Request Resolved: (${issue.ticket_number})`,
+        `Dear ${issue.reporter.full_name},
+          Your request (${issue.ticket_number}) has been resolved by ${
+          resolver.full_name
+        }.
+
+      ${solution_details ? `Solution Details: ${solution_details}` : ""}
+
+      Resolved By: ${resolver.full_name} (${resolver.email})
+      Project: ${issue.project?.name}
+      Ticket Number: ${issue.ticket_number}
+
+      You can view the resolved request in the system for more details.
+
+      Regards, ${process.env.APP_NAME} Team`
       );
 
       if (shouldCommit) await t.commit();
@@ -497,6 +545,34 @@ class NotificationService {
 
       // 7. Bulk create notifications
       await Notification.bulkCreate(notifications, { transaction: t });
+
+      // Send email to all unique resolvers
+      for (const resolver of uniqueResolvers) {
+        await sendEmail(
+          resolver.email,
+          notificationTitle,
+          `Dear ${resolver.full_name},
+        ${is_confirmed ? "Great news!" : "Important update:"}
+        ${notificationMessage}
+        ${
+          rejection_reason && !is_confirmed
+            ? `Rejection Reason: ${rejection_reason}`
+            : ""
+        }
+        Request Details:
+        - Request: ${issue.title}
+        - Ticket Number: ${issue.ticket_number}
+        - Project: ${issue.project?.name}
+        - Status: ${is_confirmed ? "Confirmed" : "Rejected"}
+        - Action By: ${creator.full_name} (${creator.email})
+        ${
+          is_confirmed
+            ? "Thank you for successfully resolving this request!"
+            : "Please review and address the concerns mentioned above."
+        }
+        Regards, ${process.env.APP_NAME} Team`
+        );
+      }
 
       if (shouldCommit) await t.commit();
 
@@ -653,6 +729,26 @@ class NotificationService {
 
       // 7. Bulk create notifications
       await Notification.bulkCreate(notifications, { transaction: t });
+
+      // Send email to all unique resolvers
+      for (const resolver of uniqueResolvers) {
+        await sendEmail(
+          resolver.email,
+          notificationTitle,
+          `Dear ${resolver.full_name},
+    
+        Important Update: Request Reopened
+        ${notificationMessage}
+        ${raise_reason ? `Reopening Reason: ${raise_reason}` : ""}
+        Request Details:
+        - Request: ${issue.title}
+        - Ticket Number: ${issue.ticket_number}
+        - Project: ${issue.project?.name}
+        - Action By: ${creator.full_name} (${creator.email})
+        The request has been reopened and requires your attention. Please review the concerns mentioned above and take appropriate action.
+        Regards, ${process.env.APP_NAME} Team`
+        );
+      }
 
       if (shouldCommit) await t.commit();
 
@@ -880,6 +976,32 @@ class NotificationService {
 
       // 8. Bulk create notifications
       await Notification.bulkCreate(notifications, { transaction: t });
+
+      // Send email to all unique internal users
+      for (const { user, internalNode } of uniqueInternalUsers) {
+        await sendEmail(
+          user.email,
+          title || `New Request in Project ${project?.name}`,
+          `Dear ${user.full_name},
+          New request has been reported from an external users in your project.
+          Project: ${project?.name}
+          Reported By: ${sender.full_name} (${sender.email})
+          External Structure: ${senderHierarchyNode.name}
+          Your Internal Node: ${internalNode.name}
+          ${
+            issueDetails
+              ? `Request: ${issueDetails.title} (${issueDetails.ticket_number})`
+              : ""
+          }
+          Message:
+          ${
+            message ||
+            "Please review the request and take the necessary action."
+          }
+          This notification has been sent to all users assigned to root internal nodes for this project.
+          Regards, ${process.env.APP_NAME} Team`
+        );
+      }
 
       if (shouldCommit) await t.commit();
 
@@ -1151,6 +1273,39 @@ class NotificationService {
 
       // 7. Bulk create notifications
       await Notification.bulkCreate(notifications, { transaction: t });
+
+      // Send email to all recipients
+      for (const recipient of recipients) {
+        const emailSubject =
+          action_type === "ASSIGNED"
+            ? `New Request Assigned to You: ${issue.title}`
+            : `Request Assignment Removed: ${issue.title}`;
+        const emailMessage =
+          action_type === "ASSIGNED"
+            ? `Dear ${recipient.user.full_name},
+          You have been assigned to a new request.
+          Request Details:
+          - Request: ${issue.title}
+          - Ticket Number: ${issue.ticket_number}
+          - Project: ${issue.project?.name}
+          - Assigned By: ${actionUser?.full_name} (${actionUser?.email})
+          ${remarks ? `- Remarks: ${remarks}` : ""}
+          ${notificationMessage}
+          Please review and take appropriate action on this request.
+          Regards, ${process.env.APP_NAME} Team`
+            : `Dear ${recipient.user.full_name},
+          Your assignment for a request has been removed.
+          Request Details:
+          - Request: ${issue.title}
+          - Ticket Number: ${issue.ticket_number}
+          - Project: ${issue.project?.name}
+          - Removed By: ${actionUser?.full_name} (${actionUser?.email})
+          ${reason ? `- Reason: ${reason}` : ""}
+          ${recipient.customMessage || notificationMessage}
+          This request is no longer assigned to you. If you believe this was in error, please contact the project administrator.
+          Regards, ${process.env.APP_NAME} Team`;
+        await sendEmail(recipient.user.email, emailSubject, emailMessage);
+      }
 
       if (shouldCommit) await t.commit();
 
