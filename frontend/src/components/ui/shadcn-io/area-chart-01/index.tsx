@@ -142,15 +142,15 @@ const fillMissingDates = (
 const chartConfig = {
   pending: {
     label: "Pending",
-    color: "hsl(var(--chart-1))",
+    color: "hsl(var(--chart-7))",
   },
   resolved: {
     label: "Resolved",
-    color: "hsl(var(--chart-2))",
+    color: "hsl(var(--chart-1))",
   },
   rejected: {
     label: "Rejected",
-    color: "hsl(var(--chart-3))",
+    color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig;
 
