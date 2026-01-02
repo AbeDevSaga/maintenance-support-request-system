@@ -1,11 +1,11 @@
-import VariantStatasCard from "../../components/dashboard/cards/VariantStatasCard";
-import DashboardLayout from "../../components/dashboard/layout/DashboardLayout";
+import ExternalStatasCard from "../../components/dashboard/cards/ExternalStatasCard";
+import ExternalDashboardLayout from "../../components/dashboard/layout/ExternalDashboardLayout";
 
 function ExternalDashboard() {
   return (
     <div className="flex flex-col space-y-6">
-      <VariantStatasCard />
-      <DashboardLayout />
+      <ExternalStatasCard />
+      <ExternalDashboardLayout />
     </div>
   );
 }

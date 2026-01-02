@@ -1,6 +1,7 @@
 const { User, UserType, RoleSubRolePermission } = require("../models");
 const {
   getInternalUserDashboardWithStats,
+  getExternalUserDashboardWithStats,
 } = require("../services/dashboadService");
 
 const getDashboardStats = async (req, res) => {
@@ -41,9 +42,17 @@ const getDashboardStats = async (req, res) => {
 
       dashboardData = result.data;
     } else {
-      // For other user types (external users)
-      // You can add different logic here later
-      dashboardData = [];
+      const result = await getExternalUserDashboardWithStats(userId);
+
+      if (!result.success) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to fetch dashboard data",
+          error: result.error,
+        });
+      }
+
+      dashboardData = result.data;
     }
 
     return res.status(200).json({
