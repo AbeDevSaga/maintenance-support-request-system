@@ -157,50 +157,70 @@ const chartConfig = {
 /* =========================
    COMPONENT
    ========================= */
-export function InternalChartAreaInteractive() {
+export function ExternalChartAreaInteractive() {
   const { data: dashboardData, isLoading, isError } = useGetDashboardStatsQuery();
 
-  const [selectedInstituteId, setSelectedInstituteId] = React.useState<string>("");
   const [selectedProjectId, setSelectedProjectId] = React.useState<string | null>(null);
+  const [selectedBranchId, setSelectedBranchId] = React.useState<string | null>(null);
   const [groupBy, setGroupBy] = React.useState<"day" | "week" | "month">("month");
 
-  // Set default institute when data loads
-  React.useEffect(() => {
-    if (dashboardData?.data?.institutes?.length > 0) {
-      const firstInstitute = dashboardData.data.institutes[0];
-      if (!selectedInstituteId && firstInstitute) {
-        setSelectedInstituteId(firstInstitute.institute_id);
-      }
-    }
-  }, [dashboardData, selectedInstituteId]);
+  // Get all unique branches across selected project(s)
+  const availableBranches = React.useMemo(() => {
+    if (!dashboardData?.data?.institute?.projects) return [];
+
+    const projects = dashboardData.data.institute.projects;
+
+    // If no project selected, get all branches from all projects
+    const targetProjects = selectedProjectId
+      ? projects.filter((p: any) => p.project_id === selectedProjectId)
+      : projects;
+
+    const branches: any[] = [];
+    targetProjects.forEach((project: any) => {
+      project.hierarchies?.forEach((hierarchy: any) => {
+        branches.push({
+          ...hierarchy,
+          project_id: project.project_id,
+          project_name: project.name
+        });
+      });
+    });
+
+    return branches;
+  }, [dashboardData, selectedProjectId]);
 
   // Transform data for chart
   const chartData = React.useMemo(() => {
-    if (!dashboardData || !selectedInstituteId) return [];
+    if (!dashboardData?.data?.institute?.projects) return [];
 
-    // Get selected institute
-    const selectedInstitute = dashboardData.data.institutes.find(
-      (inst: any) => inst.institute_id === selectedInstituteId
-    );
+    const institute = dashboardData.data.institute;
+    const projects = institute.projects;
 
-    if (!selectedInstitute) return [];
-
-    // Get projects
-    const projects = selectedProjectId
-      ? selectedInstitute.projects.filter((p: any) => p.project_id === selectedProjectId)
-      : selectedInstitute.projects;
+    // Filter projects if a specific project is selected
+    const targetProjects = selectedProjectId
+      ? projects.filter((p: any) => p.project_id === selectedProjectId)
+      : projects;
 
     // Collect all issues with their creation dates
     const allIssues: any[] = [];
     const allDates: string[] = [];
 
-    projects.forEach((project: any) => {
-      project.issues.forEach((issue: any) => {
-        allIssues.push({
-          ...issue,
-          normalizedStatus: normalizeStatus(issue.status)
+    targetProjects.forEach((project: any) => {
+      project.hierarchies?.forEach((hierarchy: any) => {
+        // Filter by branch if selected
+        if (selectedBranchId && hierarchy.hierarchy_node_id !== selectedBranchId) {
+          return;
+        }
+
+        hierarchy.issues?.forEach((issue: any) => {
+          allIssues.push({
+            ...issue,
+            normalizedStatus: normalizeStatus(issue.status),
+            project_name: project.name,
+            branch_name: hierarchy.name
+          });
+          allDates.push(issue.created_at);
         });
-        allDates.push(issue.created_at);
       });
     });
 
@@ -263,7 +283,7 @@ export function InternalChartAreaInteractive() {
     result = fillMissingDates(result, effectiveGrouping);
 
     return result;
-  }, [dashboardData, selectedInstituteId, selectedProjectId, groupBy]);
+  }, [dashboardData, selectedProjectId, selectedBranchId, groupBy]);
 
   // Auto-adjust grouping based on data span
   React.useEffect(() => {
@@ -320,35 +340,26 @@ export function InternalChartAreaInteractive() {
   };
 
   const exportData = React.useMemo(() => {
-    if (!dashboardData || !selectedInstituteId || chartData.length === 0) {
+    if (!dashboardData?.data?.institute?.projects || chartData.length === 0) {
       return [];
     }
 
-    const institute = dashboardData.data.institutes.find(
-      (i: any) => i.institute_id === selectedInstituteId
-    );
-
-    if (!institute) return [];
-
-    const projects = selectedProjectId
-      ? institute.projects.filter((p: any) => p.project_id === selectedProjectId)
-      : institute.projects;
-
-    const projectNames =
-      selectedProjectId
-        ? projects[0]?.name
-        : "All Projects";
+    const institute = dashboardData.data.institute;
 
     return chartData.map((item) => ({
       Institute: institute.name,
-      Project: projectNames,
+      Project: selectedProjectId
+        ? institute.projects.find((p: any) => p.project_id === selectedProjectId)?.name || "All Projects"
+        : "All Projects",
+      Branch: selectedBranchId
+        ? availableBranches.find((b: any) => b.hierarchy_node_id === selectedBranchId)?.name || "All Branches"
+        : "All Branches",
       Period: item.date,
       Pending: item.pending,
       Resolved: item.resolved,
       Rejected: item.rejected,
     }));
-  }, [dashboardData, selectedInstituteId, selectedProjectId, chartData]);
-
+  }, [dashboardData, selectedProjectId, selectedBranchId, chartData, availableBranches]);
 
   if (isLoading) {
     return (
@@ -381,7 +392,7 @@ export function InternalChartAreaInteractive() {
     );
   }
 
-  if (!dashboardData?.data?.institutes?.length) {
+  if (!dashboardData?.data?.institute?.projects?.length) {
     return (
       <Card className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col p-6">
         <div className="flex items-center justify-center h-64">
@@ -392,6 +403,9 @@ export function InternalChartAreaInteractive() {
       </Card>
     );
   }
+
+  const institute = dashboardData.data.institute;
+  const projects = institute.projects;
 
   return (
     <Card className="hover:shadow-lg transition-all duration-300 w-full h-full flex flex-col p-6">
@@ -412,7 +426,7 @@ export function InternalChartAreaInteractive() {
             onClick={() =>
               exportToCSV(
                 exportData,
-                `maintenance_requests_${selectedInstituteId}_${groupBy}.csv`
+                `maintenance_requests_${selectedProjectId || 'all'}_${selectedBranchId || 'all'}_${groupBy}.csv`
               )
             }
             disabled={!exportData.length}
@@ -422,64 +436,67 @@ export function InternalChartAreaInteractive() {
             Export CSV
           </Button>
 
-          {/* Institute Filter */}
-          <Select value={selectedInstituteId} onValueChange={(value) => {
-            setSelectedInstituteId(value);
-            setSelectedProjectId(null);
-            setGroupBy(null); // Reset grouping when institute changes
-          }}>
+          {/* Project Filter */}
+          <Select
+            value={selectedProjectId || "all"}
+            onValueChange={(value) => {
+              setSelectedProjectId(value === "all" ? null : value);
+              setSelectedBranchId(null); // Reset branch when project changes
+              setGroupBy(null); // Reset grouping when project changes
+            }}
+          >
             <SelectTrigger
               className="w-full sm:w-[180px] rounded-lg bg-white"
-              aria-label="Select organization"
+              aria-label="Select project"
             >
-              <SelectValue placeholder="Select organization" />
+              <SelectValue placeholder="Select project" />
             </SelectTrigger>
             <SelectContent className="rounded-xl bg-white">
-              {dashboardData.data.institutes.map((institute: any) => (
+              <SelectItem value="all" className="rounded-lg">
+                All Projects
+              </SelectItem>
+              {projects.map((project: any) => (
                 <SelectItem
-                  key={institute.institute_id}
-                  value={institute.institute_id}
+                  key={project.project_id}
+                  value={project.project_id}
                   className="rounded-lg"
                 >
-                  {institute.name}
+                  {project.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
 
-          {/* Project Filter */}
-          {selectedInstituteId && (
-            <Select
-              value={selectedProjectId || "all"}
-              onValueChange={(value) => {
-                setSelectedProjectId(value === "all" ? null : value);
-                setGroupBy(null); // Reset grouping when project changes
-              }}
+          {/* Branch Filter */}
+          <Select
+            value={selectedBranchId || "all"}
+            onValueChange={(value) => {
+              setSelectedBranchId(value === "all" ? null : value);
+              setGroupBy(null); // Reset grouping when branch changes
+            }}
+            disabled={availableBranches.length === 0}
+          >
+            <SelectTrigger
+              className="w-full sm:w-[180px] rounded-lg bg-white"
+              aria-label="Select branch"
             >
-              <SelectTrigger
-                className="w-full sm:w-[180px] rounded-lg bg-white"
-                aria-label="Select project"
-              >
-                <SelectValue placeholder="Select project" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl bg-white">
-                <SelectItem value="all" className="rounded-lg">
-                  All Projects
+              <SelectValue placeholder="Select branch" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl bg-white">
+              <SelectItem value="all" className="rounded-lg">
+                All Branches
+              </SelectItem>
+              {availableBranches.map((branch: any) => (
+                <SelectItem
+                  key={branch.hierarchy_node_id}
+                  value={branch.hierarchy_node_id}
+                  className="rounded-lg"
+                >
+                  {branch.name} ({branch.project_name})
                 </SelectItem>
-                {dashboardData.data.institutes
-                  .find((inst: any) => inst.institute_id === selectedInstituteId)
-                  ?.projects.map((project: any) => (
-                    <SelectItem
-                      key={project.project_id}
-                      value={project.project_id}
-                      className="rounded-lg"
-                    >
-                      {project.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          )}
+              ))}
+            </SelectContent>
+          </Select>
 
           {/* Group By Filter */}
           <Select value={groupBy || "auto"} onValueChange={(value: "day" | "week" | "month" | "auto") => {

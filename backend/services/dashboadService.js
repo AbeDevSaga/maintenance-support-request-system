@@ -1,5 +1,12 @@
 // services/dashboardService.js - Enhanced version
-const { User, Institute, Project, Issue, IssuePriority } = require("../models");
+const {
+  User,
+  Institute,
+  Project,
+  Issue,
+  IssuePriority,
+  HierarchyNode,
+} = require("../models");
 const { Sequelize } = require("sequelize");
 
 const getInternalUserDashboardWithStats = async () => {
@@ -155,148 +162,149 @@ const getInternalUserDashboardWithStats = async () => {
   }
 };
 
-const getExternalUserDashboardWithStatsics = async (userId) => {
-  try {
-    // Get user
-    const user = await User.findByPk(userId);
-    if (!user || !user.institute_id) {
-      throw new Error("User or institute not found");
-    }
+// const getExternalUserDashboardWithStatsics = async (userId) => {
+//   try {
+//     // Get user
+//     const user = await User.findByPk(userId);
+//     if (!user || !user.institute_id) {
+//       throw new Error("User or institute not found");
+//     }
 
-    // Get user's institute
-    const institute = await Institute.findByPk(user.institute_id, {
-      where: { is_active: true },
-      attributes: [
-        "institute_id",
-        "name",
-        "is_active",
-        "created_at",
-        [
-          Sequelize.literal(`(
-            SELECT COUNT(*)
-            FROM institute_projects AS ip
-            INNER JOIN projects AS p ON p.project_id = ip.project_id
-            WHERE ip.institute_id = "Institute"."institute_id"
-          )`),
-          "total_projects",
-        ],
-      ],
-      include: [
-        {
-          model: Project,
-          as: "projects",
-          required: false,
-          attributes: [
-            "project_id",
-            "name",
-            [
-              Sequelize.literal(`(
-                SELECT COUNT(*)
-                FROM issues AS i
-                WHERE i.project_id = "projects"."project_id"
-              )`),
-              "total_issues",
-            ],
-          ],
-          include: [
-            {
-              model: Issue,
-              as: "issues",
-              required: false,
-              attributes: [
-                "issue_id",
-                "ticket_number",
-                "status",
-                "created_at",
-                "priority_id",
-              ],
-              include: [
-                {
-                  model: IssuePriority,
-                  as: "priority",
-                  attributes: ["name", "description", "color_value"],
-                },
-              ],
-              order: [["created_at", "DESC"]],
-            },
-          ],
-        },
-      ],
-      order: [[{ model: Project, as: "projects" }, "name", "ASC"]],
-    });
+//     // Get user's institute
+//     const institute = await Institute.findByPk(user.institute_id, {
+//       where: { is_active: true },
+//       attributes: [
+//         "institute_id",
+//         "name",
+//         "is_active",
+//         "created_at",
+//         [
+//           Sequelize.literal(`(
+//             SELECT COUNT(*)
+//             FROM institute_projects AS ip
+//             INNER JOIN projects AS p ON p.project_id = ip.project_id
+//             WHERE ip.institute_id = "Institute"."institute_id"
+//           )`),
+//           "total_projects",
+//         ],
+//       ],
+//       include: [
+//         {
+//           model: Project,
+//           as: "projects",
+//           required: false,
+//           attributes: [
+//             "project_id",
+//             "name",
+//             [
+//               Sequelize.literal(`(
+//                 SELECT COUNT(*)
+//                 FROM issues AS i
+//                 WHERE i.project_id = "projects"."project_id"
+//               )`),
+//               "total_issues",
+//             ],
+//           ],
+//           include: [
+//             {
+//               model: Issue,
+//               as: "issues",
+//               required: false,
+//               attributes: [
+//                 "issue_id",
+//                 "ticket_number",
+//                 "status",
+//                 "created_at",
+//                 "priority_id",
+//               ],
+//               include: [
+//                 {
+//                   model: IssuePriority,
+//                   as: "priority",
+//                   attributes: ["name", "description", "color_value"],
+//                 },
+//               ],
+//               order: [["created_at", "DESC"]],
+//             },
+//           ],
+//         },
+//       ],
+//       order: [[{ model: Project, as: "projects" }, "name", "ASC"]],
+//     });
 
-    if (!institute) {
-      throw new Error("Institute not found or inactive");
-    }
+//     if (!institute) {
+//       throw new Error("Institute not found or inactive");
+//     }
 
-    // Totals
-    let totalProjects = 0;
-    let totalIssues = 0;
+//     // Totals
+//     let totalProjects = 0;
+//     let totalIssues = 0;
 
-    const projects = institute.projects
-      ? institute.projects.map((project) => {
-          totalProjects++;
+//     const projects = institute.projects
+//       ? institute.projects.map((project) => {
+//           totalProjects++;
 
-          const issues = project.issues
-            ? project.issues.map((issue) => {
-                totalIssues++;
+//           const issues = project.issues
+//             ? project.issues.map((issue) => {
+//                 totalIssues++;
 
-                return {
-                  issue_id: issue.issue_id,
-                  ticket_number: issue.ticket_number,
-                  status: issue.status,
-                  created_at: issue.created_at,
-                  priority_id: issue.priority_id,
-                  priority: issue.priority
-                    ? {
-                        name: issue.priority.name,
-                        description: issue.priority.description,
-                        color_value: issue.priority.color_value,
-                      }
-                    : null,
-                };
-              })
-            : [];
+//                 return {
+//                   issue_id: issue.issue_id,
+//                   ticket_number: issue.ticket_number,
+//                   status: issue.status,
+//                   created_at: issue.created_at,
+//                   priority_id: issue.priority_id,
+//                   priority: issue.priority
+//                     ? {
+//                         name: issue.priority.name,
+//                         description: issue.priority.description,
+//                         color_value: issue.priority.color_value,
+//                       }
+//                     : null,
+//                 };
+//               })
+//             : [];
 
-          return {
-            project_id: project.project_id,
-            name: project.name,
-            total_issues: project.dataValues.total_issues || 0,
-            issues,
-          };
-        })
-      : [];
+//           return {
+//             project_id: project.project_id,
+//             name: project.name,
+//             total_issues: project.dataValues.total_issues || 0,
+//             issues,
+//           };
+//         })
+//       : [];
 
-    return {
-      success: true,
-      data: {
-        summary: {
-          total_institutes: 1,
-          total_projects: totalProjects,
-          total_issues: totalIssues,
-        },
-        institute: {
-          institute_id: institute.institute_id,
-          name: institute.name,
-          created_at: institute.created_at,
-          total_projects: institute.dataValues.total_projects || 0,
-          projects,
-        },
-      },
-    };
-  } catch (error) {
-    console.error("Dashboard service error:", error);
-    return {
-      success: false,
-      error: error.message,
-    };
-  }
-};
+//     return {
+//       success: true,
+//       data: {
+//         summary: {
+//           total_institutes: 1,
+//           total_projects: totalProjects,
+//           total_issues: totalIssues,
+//         },
+//         institute: {
+//           institute_id: institute.institute_id,
+//           name: institute.name,
+//           created_at: institute.created_at,
+//           total_projects: institute.dataValues.total_projects || 0,
+//           projects,
+//         },
+//       },
+//     };
+//   } catch (error) {
+//     console.error("Dashboard service error:", error);
+//     return {
+//       success: false,
+//       error: error.message,
+//     };
+//   }
+// };
 
 const getExternalUserDashboardWithStats = async (userId) => {
   try {
     // 1️⃣ Get user
     const user = await User.findByPk(userId);
+    // console.log("External user: ", user);
     if (!user || !user.institute_id) {
       throw new Error("User or institute not found");
     }
@@ -450,4 +458,5 @@ const getExternalUserDashboardWithStats = async (userId) => {
 
 module.exports = {
   getInternalUserDashboardWithStats,
+  getExternalUserDashboardWithStats,
 };
