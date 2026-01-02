@@ -30,7 +30,7 @@ ENV NODE_ENV=production
 RUN npm ci --only=production --legacy-peer-deps
 
 # Expose the app port
-EXPOSE 4000
+EXPOSE 4038
 
 # Start the app
 CMD ["npm", "start"]
