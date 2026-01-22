@@ -773,68 +773,49 @@ export default function InternalTaskDetail() {
                                 </div>
 
                                 {/* Body */}
-                                <AnimatePresence>
-                                  {isExpanded && (
-                                    <motion.div
-                                      initial={{ opacity: 0, height: 0 }}
-                                      animate={{ opacity: 1, height: "auto" }}
-                                      exit={{ opacity: 0, height: 0 }}
-                                      transition={{ duration: 0.2 }}
-                                      className="p-4 border-t border-[#BFD7EA] bg-white"
-                                    >
-                                      <div className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3 text-gray-700">
-                                          <p className="font-semibold text-[#1E516A] text-sm mb-1">
-                                            Resolution Reason
-                                          </p>
-                                          {resolution.reason ||
-                                            "No reason provided"}
-                                        </div>
-                                        <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3 text-gray-700">
-                                          <p className="font-semibold text-[#1E516A] text-sm mb-1">
-                                            Resolver Contact
-                                          </p>
-                                          <div className="text-sm">
-                                            <p className="text-gray-600">
-                                              {resolution.resolver?.full_name ||
-                                                "N/A"}
-                                            </p>
-                                            <p className="text-gray-500 text-xs mt-1">
-                                              {resolution.resolver
-                                                ?.phone_number ||
-                                                "No phone number"}
-                                            </p>
-                                          </div>
-                                        </div>
-                                      </div>
+                             <AnimatePresence>
+  {isExpanded && (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: "auto" }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ duration: 0.2 }}
+      className="p-4 border-t border-[#BFD7EA] bg-white"
+    >
+      {/* Resolution Reason */}
+      <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-4 text-gray-700">
+        <p className="font-semibold text-[#1E516A] text-sm mb-2">
+          Resolution Reason
+        </p>
+        <p className="text-sm leading-relaxed">
+          {resolution.reason || "No resolution reason was provided."}
+        </p>
+      </div>
 
-                                      {resolutionFiles.length > 0 && (
-                                        <div className="mt-4">
-                                          <h5 className="font-semibold text-[#1E516A] mb-3">
-                                            Attachments (
-                                            {resolutionFiles.length})
-                                          </h5>
-                                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                                            {resolutionFiles.map(
-                                              (file: any, idx: number) => (
-                                                <FileCard
-                                                  key={`${resolution.resolution_id}-${idx}`}
-                                                  file={file}
-                                                  onOpen={() =>
-                                                    openFileViewer(
-                                                      resolutionFiles,
-                                                      idx
-                                                    )
-                                                  }
-                                                />
-                                              )
-                                            )}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </motion.div>
-                                  )}
-                                </AnimatePresence>
+      {/* Attachments */}
+      {resolutionFiles.length > 0 && (
+        <div className="mt-5">
+          <h5 className="font-semibold text-[#1E516A] mb-3">
+            Attachments ({resolutionFiles.length})
+          </h5>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {resolutionFiles.map((file: any, idx: number) => (
+              <FileCard
+                key={`${resolution.resolution_id}-${idx}`}
+                file={file}
+                onOpen={() =>
+                  openFileViewer(resolutionFiles, idx)
+                }
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  )}
+</AnimatePresence>
+
                               </div>
                             );
                           }

@@ -141,7 +141,7 @@ export default function UserTaskDetail() {
   const prevImage = () => {
     if (modalImageIndex !== null) {
       setModalImageIndex(
-        (modalImageIndex - 1 + issueFiles.length) % issueFiles.length
+        (modalImageIndex - 1 + issueFiles.length) % issueFiles.length,
       );
     }
   };
@@ -177,7 +177,7 @@ export default function UserTaskDetail() {
     setExpandedRejects((prev) =>
       prev.includes(rejectId)
         ? prev.filter((id) => id !== rejectId)
-        : [...prev, rejectId]
+        : [...prev, rejectId],
     );
   };
 
@@ -191,7 +191,9 @@ export default function UserTaskDetail() {
   };
 
   // Toggle accordion sections (like IssueDetail)
-  const toggleSection = (section: "escalations" | "resolutions" | "rejects" | "reRaises") => {
+  const toggleSection = (
+    section: "escalations" | "resolutions" | "rejects" | "reRaises",
+  ) => {
     setExpandedSections((prev) => ({
       ...prev,
       [section]: !prev[section],
@@ -199,25 +201,25 @@ export default function UserTaskDetail() {
   };
   const toggleReRaise = (id: string) => {
     setExpandedReRaises((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
-  
+
   const toggleAllReRaises = () => {
     if (!issue?.reRaises) return;
-  
+
     if (expandedReRaises.length === issue.reRaises.length) {
       setExpandedReRaises([]);
     } else {
       setExpandedReRaises(issue.reRaises.map((r: any) => r.re_raise_id));
     }
   };
-  
+
   const toggleEscalation = (escalationId: string) => {
     setExpandedEscalations((prev) =>
       prev.includes(escalationId)
         ? prev.filter((id) => id !== escalationId)
-        : [...prev, escalationId]
+        : [...prev, escalationId],
     );
   };
 
@@ -225,7 +227,7 @@ export default function UserTaskDetail() {
     setExpandedResolutions((prev) =>
       prev.includes(resolutionId)
         ? prev.filter((id) => id !== resolutionId)
-        : [...prev, resolutionId]
+        : [...prev, resolutionId],
     );
   };
 
@@ -235,7 +237,7 @@ export default function UserTaskDetail() {
       setExpandedEscalations([]);
     } else {
       setExpandedEscalations(
-        issue.escalations.map((esc: any) => esc.escalation_id)
+        issue.escalations.map((esc: any) => esc.escalation_id),
       );
     }
   };
@@ -246,7 +248,7 @@ export default function UserTaskDetail() {
       setExpandedResolutions([]);
     } else {
       setExpandedResolutions(
-        issue.resolutions.map((res: any) => res.resolution_id)
+        issue.resolutions.map((res: any) => res.resolution_id),
       );
     }
   };
@@ -349,10 +351,10 @@ export default function UserTaskDetail() {
                       issue.status === "resolved"
                         ? "text-green-900 "
                         : issue.status === "in_progress"
-                        ? "text-blue-500"
-                        : issue.status === "closed"
-                        ? "text-red-500"
-                        : "text-gray-500"
+                          ? "text-blue-500"
+                          : issue.status === "closed"
+                            ? "text-red-500"
+                            : "text-gray-500"
                     }`}
                   >
                     {formatStatus(issue.status)}
@@ -495,21 +497,21 @@ export default function UserTaskDetail() {
                         {issue.escalations.map(
                           (escalation: any, escalationIndex: number) => {
                             const isExpanded = expandedEscalations.includes(
-                              escalation.escalation_id
+                              escalation.escalation_id,
                             );
                             const escalationFiles =
                               escalation.attachments?.map(
                                 (attachment: any) => ({
                                   url: getFileUrl(
-                                    attachment.attachment.file_path
+                                    attachment.attachment.file_path,
                                   ),
                                   name: attachment.attachment.file_name,
                                   path: attachment.attachment.file_path,
                                   type: getFileType(
-                                    attachment.attachment.file_name
+                                    attachment.attachment.file_name,
                                   ),
                                   uploadedAt: attachment.attachment.created_at,
-                                })
+                                }),
                               ) || [];
 
                             return (
@@ -614,11 +616,11 @@ export default function UserTaskDetail() {
                                                   onOpen={() =>
                                                     openFileViewer(
                                                       escalationFiles,
-                                                      idx
+                                                      idx,
                                                     )
                                                   }
                                                 />
-                                              )
+                                              ),
                                             )}
                                           </div>
                                         </div>
@@ -628,7 +630,7 @@ export default function UserTaskDetail() {
                                 </AnimatePresence>
                               </div>
                             );
-                          }
+                          },
                         )}
                       </motion.div>
                     )}
@@ -685,21 +687,21 @@ export default function UserTaskDetail() {
                         {issue.resolutions.map(
                           (resolution: any, resolutionIndex: number) => {
                             const isExpanded = expandedResolutions.includes(
-                              resolution.resolution_id
+                              resolution.resolution_id,
                             );
                             const resolutionFiles =
                               resolution.attachments?.map(
                                 (attachment: any) => ({
                                   url: getFileUrl(
-                                    attachment.attachment.file_path
+                                    attachment.attachment.file_path,
                                   ),
                                   name: attachment.attachment.file_name,
                                   path: attachment.attachment.file_path,
                                   type: getFileType(
-                                    attachment.attachment.file_name
+                                    attachment.attachment.file_name,
                                   ),
                                   uploadedAt: attachment.attachment.created_at,
-                                })
+                                }),
                               ) || [];
 
                             return (
@@ -768,38 +770,25 @@ export default function UserTaskDetail() {
                                       transition={{ duration: 0.2 }}
                                       className="p-4 border-t border-[#BFD7EA] bg-white"
                                     >
-                                      <div className="mt-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3 text-gray-700">
-                                          <p className="font-semibold text-[#1E516A] text-sm mb-1">
-                                            Resolution Reason
-                                          </p>
+                                      {/* Resolution Reason */}
+                                      <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-4 text-gray-700">
+                                        <p className="font-semibold text-[#1E516A] text-sm mb-2">
+                                          Resolution Reason
+                                        </p>
+                                        <p className="text-sm leading-relaxed">
                                           {resolution.reason ||
-                                            "No reason provided"}
-                                        </div>
-                                        <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3 text-gray-700">
-                                          <p className="font-semibold text-[#1E516A] text-sm mb-1">
-                                            Resolver Contact
-                                          </p>
-                                          <div className="text-sm">
-                                            <p className="text-gray-600">
-                                              {resolution.resolver?.full_name ||
-                                                "N/A"}
-                                            </p>
-                                            <p className="text-gray-500 text-xs mt-1">
-                                              {resolution.resolver
-                                                ?.phone_number ||
-                                                "No phone number"}
-                                            </p>
-                                          </div>
-                                        </div>
+                                            "No resolution reason was provided."}
+                                        </p>
                                       </div>
 
+                                      {/* Attachments */}
                                       {resolutionFiles.length > 0 && (
-                                        <div className="mt-4">
+                                        <div className="mt-5">
                                           <h5 className="font-semibold text-[#1E516A] mb-3">
                                             Attachments (
                                             {resolutionFiles.length})
                                           </h5>
+
                                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                             {resolutionFiles.map(
                                               (file: any, idx: number) => (
@@ -809,11 +798,11 @@ export default function UserTaskDetail() {
                                                   onOpen={() =>
                                                     openFileViewer(
                                                       resolutionFiles,
-                                                      idx
+                                                      idx,
                                                     )
                                                   }
                                                 />
-                                              )
+                                              ),
                                             )}
                                           </div>
                                         </div>
@@ -823,7 +812,7 @@ export default function UserTaskDetail() {
                                 </AnimatePresence>
                               </div>
                             );
-                          }
+                          },
                         )}
                       </motion.div>
                     )}
@@ -886,7 +875,7 @@ export default function UserTaskDetail() {
                       >
                         {issue.rejects.map((reject: any, index: number) => {
                           const isExpanded = expandedRejects.includes(
-                            reject.reject_id
+                            reject.reject_id,
                           );
 
                           const rejectFiles =
@@ -978,11 +967,11 @@ export default function UserTaskDetail() {
                                                 onOpen={() =>
                                                   openFileViewer(
                                                     rejectFiles,
-                                                    idx
+                                                    idx,
                                                   )
                                                 }
                                               />
-                                            )
+                                            ),
                                           )}
                                         </div>
                                       </div>
@@ -999,163 +988,170 @@ export default function UserTaskDetail() {
                 </div>
               )}
 
-{issue?.reRaises && issue.reRaises.length > 0 && (
-  <div className="mb-6">
-    {/* Header */}
-    <div className="flex items-center justify-between mb-4 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200">
-      <div className="flex items-center gap-3">
-        <div className="w-2 h-8 bg-amber-600 rounded-full" />
-        <div>
-          <h3 className="text-[#1E516A] font-bold text-lg">
-            Re-Raised Issues ({issue.reRaises.length})
-          </h3>
-          <p className="text-sm text-gray-600">
-            Issues reopened after resolution
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <button
-          className="border border-amber-600 text-amber-600 text-xs px-3 py-1 rounded-md hover:bg-amber-50"
-          onClick={toggleAllReRaises}
-        >
-          {expandedReRaises.length === issue.reRaises.length
-            ? "Collapse All"
-            : "Expand All"}
-        </button>
-
-        <button
-          onClick={() =>
-            setExpandedSections((prev) => ({
-              ...prev,
-              reRaises: !prev.reRaises,
-            }))
-          }
-          className="p-2 hover:bg-white rounded-lg"
-        >
-          {expandedSections.reRaises ? (
-            <ChevronUp className="w-5 h-5 text-amber-600" />
-          ) : (
-            <ChevronDown className="w-5 h-5 text-amber-600" />
-          )}
-        </button>
-      </div>
-    </div>
-
-    {/* Body */}
-    <AnimatePresence>
-      {expandedSections.reRaises && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          className="space-y-4"
-        >
-          {issue.reRaises.map((reRaise: any, index: number) => {
-            const isExpanded = expandedReRaises.includes(
-              reRaise.re_raise_id
-            );
-
-            const files =
-              reRaise.attachments?.map((att: any) => ({
-                url: getFileUrl(att.attachment.file_path),
-                name: att.attachment.file_name,
-                path: att.attachment.file_path,
-                type: getFileType(att.attachment.file_name),
-                uploadedAt: att.attachment.created_at,
-              })) || [];
-
-            return (
-              <div
-                key={reRaise.re_raise_id}
-                className="border border-[#BFD7EA] rounded-lg overflow-hidden"
-              >
-                {/* Item Header */}
-                <div
-                  className="p-4 cursor-pointer hover:bg-amber-50 flex justify-between"
-                  onClick={() => toggleReRaise(reRaise.re_raise_id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                      <span className="font-bold text-amber-700">
-                        {index + 1}
-                      </span>
+              {issue?.reRaises && issue.reRaises.length > 0 && (
+                <div className="mb-6">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-4 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-8 bg-amber-600 rounded-full" />
+                      <div>
+                        <h3 className="text-[#1E516A] font-bold text-lg">
+                          Re-Raised Issues ({issue.reRaises.length})
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Issues reopened after resolution
+                        </p>
+                      </div>
                     </div>
 
-                    <div>
-                      <h4 className="font-semibold text-[#1E516A]">
-                        Re-Raised by{" "}
-                        {reRaise.re_raiser?.full_name || "N/A"}
-                      </h4>
-                      <div className=" flex gap-5">
-                      <p className="text-sm text-gray-600">
-                        On:{" "}
-                        {reRaise.created_at
-                          ? formatDate(reRaise.created_at)
-                          : "—"}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        
-                        Re-Occured Time: {reRaise.re_raised_at ? formatDate(reRaise.re_raised_at) : "—"}
-                      </p>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="border border-amber-600 text-amber-600 text-xs px-3 py-1 rounded-md hover:bg-amber-50"
+                        onClick={toggleAllReRaises}
+                      >
+                        {expandedReRaises.length === issue.reRaises.length
+                          ? "Collapse All"
+                          : "Expand All"}
+                      </button>
 
+                      <button
+                        onClick={() =>
+                          setExpandedSections((prev) => ({
+                            ...prev,
+                            reRaises: !prev.reRaises,
+                          }))
+                        }
+                        className="p-2 hover:bg-white rounded-lg"
+                      >
+                        {expandedSections.reRaises ? (
+                          <ChevronUp className="w-5 h-5 text-amber-600" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-amber-600" />
+                        )}
+                      </button>
                     </div>
                   </div>
 
-                  {isExpanded ? (
-                    <ChevronUp className="w-5 h-5 text-amber-600" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5 text-amber-600" />
-                  )}
-                </div>
+                  {/* Body */}
+                  <AnimatePresence>
+                    {expandedSections.reRaises && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-4"
+                      >
+                        {issue.reRaises.map((reRaise: any, index: number) => {
+                          const isExpanded = expandedReRaises.includes(
+                            reRaise.re_raise_id,
+                          );
 
-                {/* Item Body */}
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="p-4 border-t border-[#BFD7EA] bg-white"
-                    >
-                      <div className="bg-[#094C810D] border rounded-md p-3">
-                        <p className="font-semibold text-sm text-[#1E516A]">
-                          Re-Raise Reason
-                        </p>
-                        <p>{reRaise.reason || "No reason provided"}</p>
-                      </div>
+                          const files =
+                            reRaise.attachments?.map((att: any) => ({
+                              url: getFileUrl(att.attachment.file_path),
+                              name: att.attachment.file_name,
+                              path: att.attachment.file_path,
+                              type: getFileType(att.attachment.file_name),
+                              uploadedAt: att.attachment.created_at,
+                            })) || [];
 
-                      {files.length > 0 && (
-                        <div className="mt-4">
-                          <h5 className="font-semibold text-[#1E516A] mb-2">
-                            Attachments ({files.length})
-                          </h5>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            {files.map((file: any, idx: number) => (
-                              <FileCard
-                                key={idx}
-                                file={file}
-                                onOpen={() =>
-                                  openFileViewer(files, idx)
+                          return (
+                            <div
+                              key={reRaise.re_raise_id}
+                              className="border border-[#BFD7EA] rounded-lg overflow-hidden"
+                            >
+                              {/* Item Header */}
+                              <div
+                                className="p-4 cursor-pointer hover:bg-amber-50 flex justify-between"
+                                onClick={() =>
+                                  toggleReRaise(reRaise.re_raise_id)
                                 }
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            );
-          })}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </div>
-)}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                                    <span className="font-bold text-amber-700">
+                                      {index + 1}
+                                    </span>
+                                  </div>
+
+                                  <div>
+                                    <h4 className="font-semibold text-[#1E516A]">
+                                      Re-Raised by{" "}
+                                      {reRaise.re_raiser?.full_name || "N/A"}
+                                    </h4>
+                                    <div className=" flex gap-5">
+                                      <p className="text-sm text-gray-600">
+                                        On:{" "}
+                                        {reRaise.created_at
+                                          ? formatDate(reRaise.created_at)
+                                          : "—"}
+                                      </p>
+                                      <p className="text-sm text-gray-600">
+                                        Re-Occured Time:{" "}
+                                        {reRaise.re_raised_at
+                                          ? formatDate(reRaise.re_raised_at)
+                                          : "—"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {isExpanded ? (
+                                  <ChevronUp className="w-5 h-5 text-amber-600" />
+                                ) : (
+                                  <ChevronDown className="w-5 h-5 text-amber-600" />
+                                )}
+                              </div>
+
+                              {/* Item Body */}
+                              <AnimatePresence>
+                                {isExpanded && (
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: "auto" }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="p-4 border-t border-[#BFD7EA] bg-white"
+                                  >
+                                    <div className="bg-[#094C810D] border rounded-md p-3">
+                                      <p className="font-semibold text-sm text-[#1E516A]">
+                                        Re-Raise Reason
+                                      </p>
+                                      <p>
+                                        {reRaise.reason || "No reason provided"}
+                                      </p>
+                                    </div>
+
+                                    {files.length > 0 && (
+                                      <div className="mt-4">
+                                        <h5 className="font-semibold text-[#1E516A] mb-2">
+                                          Attachments ({files.length})
+                                        </h5>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                          {files.map(
+                                            (file: any, idx: number) => (
+                                              <FileCard
+                                                key={idx}
+                                                file={file}
+                                                onOpen={() =>
+                                                  openFileViewer(files, idx)
+                                                }
+                                              />
+                                            ),
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
 
               {issue?.status !== "resolved" && (
                 <>
@@ -1173,8 +1169,8 @@ export default function UserTaskDetail() {
                           selectedAction === action.key
                             ? `border-[${action.border}] bg-[${action.bg}]`
                             : action.enabled
-                            ? "border-[#D5E3EC] bg-white hover:bg-gray-50 cursor-pointer"
-                            : "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
+                              ? "border-[#D5E3EC] bg-white hover:bg-gray-50 cursor-pointer"
+                              : "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
                         }`}
                       >
                         {!action.enabled && (
@@ -1188,8 +1184,8 @@ export default function UserTaskDetail() {
                               selectedAction === action.key
                                 ? `border-[${action.color}]`
                                 : action.enabled
-                                ? "border-gray-300"
-                                : "border-gray-200"
+                                  ? "border-gray-300"
+                                  : "border-gray-200"
                             }`}
                           >
                             {selectedAction === action.key && (
@@ -1278,7 +1274,7 @@ export default function UserTaskDetail() {
                                   index:
                                     (prev.index - 1 + prev.files.length) %
                                     prev.files.length,
-                                }
+                                },
                           );
                         }}
                       >
@@ -1294,7 +1290,7 @@ export default function UserTaskDetail() {
                               : {
                                   ...prev,
                                   index: (prev.index + 1) % prev.files.length,
-                                }
+                                },
                           );
                         }}
                       >

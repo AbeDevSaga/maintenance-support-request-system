@@ -83,7 +83,7 @@ export default function UserIssueDetail() {
     setExpandedRejects((prev) =>
       prev.includes(rejectId)
         ? prev.filter((id) => id !== rejectId)
-        : [...prev, rejectId]
+        : [...prev, rejectId],
     );
   };
 
@@ -98,7 +98,7 @@ export default function UserIssueDetail() {
   };
   // Update toggleSection function to include reRaises
   const toggleSection = (
-    section: "escalations" | "resolutions" | "rejects" | "reRaises"
+    section: "escalations" | "resolutions" | "rejects" | "reRaises",
   ) => {
     setExpandedSections((prev) => ({
       ...prev,
@@ -111,7 +111,7 @@ export default function UserIssueDetail() {
     setExpandedReRaises((prev) =>
       prev.includes(reRaiseId)
         ? prev.filter((id) => id !== reRaiseId)
-        : [...prev, reRaiseId]
+        : [...prev, reRaiseId],
     );
   };
 
@@ -130,7 +130,7 @@ export default function UserIssueDetail() {
     setExpandedEscalations((prev) =>
       prev.includes(escalationId)
         ? prev.filter((id) => id !== escalationId)
-        : [...prev, escalationId]
+        : [...prev, escalationId],
     );
   };
 
@@ -139,7 +139,7 @@ export default function UserIssueDetail() {
     setExpandedResolutions((prev) =>
       prev.includes(resolutionId)
         ? prev.filter((id) => id !== resolutionId)
-        : [...prev, resolutionId]
+        : [...prev, resolutionId],
     );
   };
 
@@ -211,7 +211,7 @@ export default function UserIssueDetail() {
   const prevImage = () => {
     if (modalImageIndex !== null) {
       setModalImageIndex(
-        (modalImageIndex - 1 + issueFiles.length) % issueFiles.length
+        (modalImageIndex - 1 + issueFiles.length) % issueFiles.length,
       );
     }
   };
@@ -328,10 +328,10 @@ export default function UserIssueDetail() {
                       issue.status === "resolved"
                         ? "text-green-900 "
                         : issue.status === "in_progress"
-                        ? "text-blue-500"
-                        : issue.status === "closed"
-                        ? "text-red-500"
-                        : "text-gray-500"
+                          ? "text-blue-500"
+                          : issue.status === "closed"
+                            ? "text-red-500"
+                            : "text-gray-500"
                     }`}
                   >
                     {formatStatus(issue.status)}
@@ -484,17 +484,17 @@ export default function UserIssueDetail() {
                         {issue.escalations.map(
                           (escalation, escalationIndex) => {
                             const isExpanded = expandedEscalations.includes(
-                              escalation.escalation_id
+                              escalation.escalation_id,
                             );
                             const escalationFiles =
                               escalation.attachments?.map((attachment) => ({
                                 url: getFileUrl(
-                                  attachment.attachment.file_path
+                                  attachment.attachment.file_path,
                                 ),
                                 name: attachment.attachment.file_name,
                                 path: attachment.attachment.file_path,
                                 type: getFileType(
-                                  attachment.attachment.file_name
+                                  attachment.attachment.file_name,
                                 ),
                                 uploadedAt: attachment.attachment.created_at,
                                 escalationId: escalation.escalation_id,
@@ -547,9 +547,9 @@ export default function UserIssueDetail() {
                                             escalation.status === "completed"
                                               ? "bg-green-100 text-green-800"
                                               : escalation.status ===
-                                                "in_progress"
-                                              ? "bg-yellow-100 text-yellow-800"
-                                              : "bg-blue-100 text-blue-800"
+                                                  "in_progress"
+                                                ? "bg-yellow-100 text-yellow-800"
+                                                : "bg-blue-100 text-blue-800"
                                           }`}
                                         >
                                           {formatStatus(escalation.status) ||
@@ -661,11 +661,11 @@ export default function UserIssueDetail() {
                                                   onOpen={() =>
                                                     openFileViewer(
                                                       escalationFiles,
-                                                      idx
+                                                      idx,
                                                     )
                                                   }
                                                 />
-                                              )
+                                              ),
                                             )}
                                           </div>
                                         </div>
@@ -675,7 +675,7 @@ export default function UserIssueDetail() {
                                 </AnimatePresence>
                               </div>
                             );
-                          }
+                          },
                         )}
                       </motion.div>
                     )}
@@ -734,17 +734,17 @@ export default function UserIssueDetail() {
                         {issue.resolutions.map(
                           (resolution, resolutionIndex) => {
                             const isExpanded = expandedResolutions.includes(
-                              resolution.resolution_id
+                              resolution.resolution_id,
                             );
                             const resolutionFiles =
                               resolution.attachments?.map((attachment) => ({
                                 url: getFileUrl(
-                                  attachment.attachment.file_path
+                                  attachment.attachment.file_path,
                                 ),
                                 name: attachment.attachment.file_name,
                                 path: attachment.attachment.file_path,
                                 type: getFileType(
-                                  attachment.attachment.file_name
+                                  attachment.attachment.file_name,
                                 ),
                                 uploadedAt: attachment.attachment.created_at,
                                 resolutionId: resolution.resolution_id,
@@ -771,11 +771,13 @@ export default function UserIssueDetail() {
                                         {resolutionIndex + 1}
                                       </span>
                                     </div>
+
                                     <div>
                                       <h4 className="font-semibold text-[#1E516A]">
                                         {resolution.resolver?.full_name ||
-                                          "Unknown"}
+                                          "Unknown Resolver"}
                                       </h4>
+
                                       <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
                                         <span>
                                           By{" "}
@@ -788,11 +790,12 @@ export default function UserIssueDetail() {
                                           {formatDate(resolution.resolved_at)}
                                         </span>
                                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                          {resolution.status || "resolved"}
+                                          {resolution.status || "Resolved"}
                                         </span>
                                       </div>
                                     </div>
                                   </div>
+
                                   <div className="flex items-center gap-3">
                                     {resolutionFiles.length > 0 && (
                                       <span className="text-sm text-gray-500 flex items-center gap-1">
@@ -800,6 +803,7 @@ export default function UserIssueDetail() {
                                         {resolutionFiles.length}
                                       </span>
                                     )}
+
                                     {isExpanded ? (
                                       <ChevronUp className="w-5 h-5 text-green-700" />
                                     ) : (
@@ -808,7 +812,7 @@ export default function UserIssueDetail() {
                                   </div>
                                 </div>
 
-                                {/* Resolution Content (Accordion Body) */}
+                                {/* Resolution Content */}
                                 <AnimatePresence>
                                   {isExpanded && (
                                     <motion.div
@@ -818,41 +822,25 @@ export default function UserIssueDetail() {
                                       transition={{ duration: 0.3 }}
                                       className="p-4 border-t border-[#BFD7EA] bg-white"
                                     >
-                                      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3">
-                                          <p className="font-semibold text-[#1E516A] text-sm mb-1">
-                                            Resolution Reason
-                                          </p>
-                                          <p className="text-gray-700">
-                                            {resolution.reason ||
-                                              "No reason provided"}
-                                          </p>
-                                        </div>
-                                        <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-3">
-                                          <p className="font-semibold text-[#1E516A] text-sm mb-1">
-                                            Resolver Contact
-                                          </p>
-                                          <div className="text-sm">
-                                            <p className="text-gray-600">
-                                              {resolution.resolver?.email ||
-                                                "N/A"}
-                                            </p>
-                                            <p className="text-gray-500 text-xs mt-1">
-                                              {resolution.resolver
-                                                ?.phone_number ||
-                                                "No phone number"}
-                                            </p>
-                                          </div>
-                                        </div>
+                                      {/* Resolution Reason */}
+                                      <div className="bg-[#094C810D] border border-[#BFD7EA] rounded-md p-4">
+                                        <p className="font-semibold text-[#1E516A] text-sm mb-2">
+                                          Resolution Reason
+                                        </p>
+                                        <p className="text-gray-700 text-sm leading-relaxed">
+                                          {resolution.reason ||
+                                            "No resolution reason was provided."}
+                                        </p>
                                       </div>
 
-                                      {/* Resolution Attachments */}
+                                      {/* Attachments */}
                                       {resolutionFiles.length > 0 && (
-                                        <div className="mt-4">
+                                        <div className="mt-5">
                                           <h5 className="font-semibold text-[#1E516A] mb-3">
                                             Attachments (
                                             {resolutionFiles.length})
                                           </h5>
+
                                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                             {resolutionFiles.map(
                                               (file, idx) => (
@@ -862,11 +850,11 @@ export default function UserIssueDetail() {
                                                   onOpen={() =>
                                                     openFileViewer(
                                                       resolutionFiles,
-                                                      idx
+                                                      idx,
                                                     )
                                                   }
                                                 />
-                                              )
+                                              ),
                                             )}
                                           </div>
                                         </div>
@@ -876,7 +864,7 @@ export default function UserIssueDetail() {
                                 </AnimatePresence>
                               </div>
                             );
-                          }
+                          },
                         )}
                       </motion.div>
                     )}
@@ -934,7 +922,7 @@ export default function UserIssueDetail() {
                       >
                         {issue.rejects.map((reject, rejectIndex) => {
                           const isExpanded = expandedRejects.includes(
-                            reject.reject_id
+                            reject.reject_id,
                           );
                           const rejectFiles =
                             reject.attachments?.map((attachment) => ({
@@ -942,7 +930,7 @@ export default function UserIssueDetail() {
                               name: attachment.attachment.file_name,
                               path: attachment.attachment.file_path,
                               type: getFileType(
-                                attachment.attachment.file_name
+                                attachment.attachment.file_name,
                               ),
                               uploadedAt: attachment.attachment.created_at,
                               rejectId: reject.reject_id,
@@ -1117,7 +1105,7 @@ export default function UserIssueDetail() {
                       >
                         {issue.reRaises.map((reRaise, reRaiseIndex) => {
                           const isExpanded = expandedReRaises.includes(
-                            reRaise.re_raise_id
+                            reRaise.re_raise_id,
                           );
                           const reRaiseFiles =
                             reRaise.attachments?.map((attachment) => ({
@@ -1125,7 +1113,7 @@ export default function UserIssueDetail() {
                               name: attachment.attachment.file_name,
                               path: attachment.attachment.file_path,
                               type: getFileType(
-                                attachment.attachment.file_name
+                                attachment.attachment.file_name,
                               ),
                               uploadedAt: attachment.attachment.created_at,
                               reRaiseId: reRaise.re_raise_id,
@@ -1248,7 +1236,7 @@ export default function UserIssueDetail() {
                                               onOpen={() =>
                                                 openFileViewer(
                                                   reRaiseFiles,
-                                                  idx
+                                                  idx,
                                                 )
                                               }
                                             />
@@ -1284,8 +1272,8 @@ export default function UserIssueDetail() {
                           selectedAction === action.key
                             ? `border-[${action.border}] bg-[${action.bg}]`
                             : action.enabled
-                            ? "border-[#D5E3EC] bg-white hover:bg-gray-50 cursor-pointer"
-                            : "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
+                              ? "border-[#D5E3EC] bg-white hover:bg-gray-50 cursor-pointer"
+                              : "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
                         }`}
                       >
                         {!action.enabled && (
@@ -1299,8 +1287,8 @@ export default function UserIssueDetail() {
                               selectedAction === action.key
                                 ? `border-[${action.color}]`
                                 : action.enabled
-                                ? "border-gray-300"
-                                : "border-gray-200"
+                                  ? "border-gray-300"
+                                  : "border-gray-200"
                             }`}
                           >
                             {selectedAction === action.key && (
@@ -1344,8 +1332,8 @@ export default function UserIssueDetail() {
                           selectedAction === action.key
                             ? `border-[${action.border}] bg-[${action.bg}]`
                             : action.enabled
-                            ? "border-[#D5E3EC] bg-white hover:bg-gray-50 cursor-pointer"
-                            : "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
+                              ? "border-[#D5E3EC] bg-white hover:bg-gray-50 cursor-pointer"
+                              : "border-gray-200 bg-gray-50 cursor-not-allowed opacity-60"
                         }`}
                       >
                         {!action.enabled && (
@@ -1359,8 +1347,8 @@ export default function UserIssueDetail() {
                               selectedAction === action.key
                                 ? `border-[${action.color}]`
                                 : action.enabled
-                                ? "border-gray-300"
-                                : "border-gray-200"
+                                  ? "border-gray-300"
+                                  : "border-gray-200"
                             }`}
                           >
                             {selectedAction === action.key && (
@@ -1447,7 +1435,7 @@ export default function UserIssueDetail() {
                                   index:
                                     (prev.index - 1 + prev.files.length) %
                                     prev.files.length,
-                                }
+                                },
                           );
                         }}
                       >
@@ -1463,7 +1451,7 @@ export default function UserIssueDetail() {
                               : {
                                   ...prev,
                                   index: (prev.index + 1) % prev.files.length,
-                                }
+                                },
                           );
                         }}
                       >
