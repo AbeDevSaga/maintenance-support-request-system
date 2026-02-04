@@ -1,14 +1,15 @@
 const express = require("express");
-require("./cronjobs");
+
 const dotenv = require("dotenv");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
 const bodyParser = require("body-parser");
+const helmet = require("helmet");
 
 dotenv.config();
-
+require("./cronjobs");
 const { swaggerUi, swaggerSpec } = require("./swagger");
 
 // ================== Here Import Routes=================
@@ -54,36 +55,47 @@ const app = express();
 const appServer = http.createServer(app);
 
 // ================== Middleware ==================
-// const devAuthBypass = require("./middlewares/devAuthBypass");
-// app.use(devAuthBypass);
-// app.use(express.json());
+// ================== BASIC SECURITY ==================
+app.disable("x-powered-by");
 
-// app.use(
-//   express.json({
-//     verify: (req, res, buf) => {
-//       try {
-//         JSON.parse(buf);
-//       } catch (e) {
-//         res.status(400).json({
-//           message:
-//             "Invalid JSON format. Please ensure all property names are double-quoted and JSON is valid.",
-//         });
-//         throw e;
-//       }
-//     },
-//   })
-// );
+// ================== HELMET (SECURITY HEADERS) ==================
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
 
+// ================== CORS Configuration ==================
+const allowedOrigins = [
+  "http://196.188.240.103:4037",
+  "http://localhost:4037",
+  "http://localhost:4000",
+  process.env.FRONTEND_URL,
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+
+
+// ================== BODY PARSING ==================
 app.use(
   express.json({
     verify: (req, res, buf) => {
       try {
         JSON.parse(buf);
-      } catch (e) {
-        // Don't throw the error after sending response
+      } catch {
         const error = new Error("Invalid JSON payload");
         error.status = 400;
-        error.expose = true;
         throw error;
       }
     },
@@ -118,20 +130,8 @@ app.use(
   })
 );
 
-// ================== CORS Configuration ==================
-const allowedOrigins = [
-  "http://196.188.240.103:4037",
-  "http://localhost:4037",
-  "http://localhost:4000",
-  process.env.FRONTEND_URL,
-];
-const corsOptions = {
-  origin: true, // Allow all origins for development
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  credentials: true,
-  optionsSuccessStatus: 204,
-};
-app.use(cors(corsOptions));
+
+
 
 // ================== Database Connection ==================
 const { sequelize } = require("./models");
