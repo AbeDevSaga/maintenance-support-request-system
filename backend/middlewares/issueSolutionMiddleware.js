@@ -1,7 +1,7 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-
+const crypto = require("crypto");
 // Allowed file types (you can adjust if needed)
 const allowedTypes = [
   "audio/mpeg",
@@ -26,7 +26,7 @@ if (!fs.existsSync(solutionUploadDir)) {
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, solutionUploadDir),
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const uniqueSuffix =crypto.randomUUID();
     const ext = path.extname(file.originalname);
     const baseName = path
       .basename(file.originalname, ext)

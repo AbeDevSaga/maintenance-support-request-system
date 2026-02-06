@@ -48,13 +48,7 @@ const ForgotPasswordEmail = () => {
             <Input
               type="email"
               placeholder="Enter your email"
-              {...register("email", {
-                required: "Email is required",
-                pattern: {
-                  value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                  message: "Invalid email address",
-                },
-              })}
+
             />
             {errors.email && (
               <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>

@@ -1,7 +1,7 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-
+const crypto = require("crypto");
 const allowedTypes = [
   "audio/mpeg",
   "audio/wav",
@@ -23,7 +23,7 @@ if (!fs.existsSync(tempUploadDir))
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, tempUploadDir),
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const uniqueSuffix = crypto.randomUUID();
     const ext = path.extname(file.originalname);
     const baseName = path
       .basename(file.originalname, ext)
