@@ -4,20 +4,16 @@ import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import PageMeta from "../../components/common/PageMeta";
-import {
-  X,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   useAcceptIssueMutation,
   useGetIssueByIdQuery,
 } from "../../redux/services/issueApi";
 import { getFileType, getFileUrl } from "../../utils/fileUrl";
 import { useGetCurrentUserQuery } from "../../redux/services/authApi";
-import { 
+import {
   getUserCurrentNode,
-  isUserAtLeafNode 
+  isUserAtLeafNode,
 } from "../../utils/hierarchUtils";
 import {
   canAssign,
@@ -29,9 +25,9 @@ import TimelineOpener from "../../components/common/TimelineOpener";
 import IssueHistoryLog from "../../pages/userTasks/IssueHistoryLog";
 import ResolutionPreview from "../../pages/userTasks/ResolutionPreview";
 import AssignmentPreview from "./AssignmentPreview";
-import { 
+import {
   useGetUserInternalNodesByProjectQuery,
-  useGetInternalNodesQuery
+  useGetInternalNodesQuery,
 } from "../../redux/services/internalNodeApi";
 import { toast } from "sonner";
 import { formatStatus } from "../../utils/statusFormatter";
@@ -63,14 +59,14 @@ export default function InternalTaskDetail() {
     files: any[];
     index: number;
   } | null>(null);
-  
+
   // State for user's position
   const [userAtLeafNode, setUserAtLeafNode] = useState(false);
   const [userNode, setUserNode] = useState<any>(null);
 
   const { data: loggedUser, isLoading: userLoading } = useGetCurrentUserQuery();
   const userId = loggedUser?.user?.user_id || "";
-  
+
   // Get user's project assignments
   const {
     data: userProjectNode,
@@ -81,19 +77,17 @@ export default function InternalTaskDetail() {
   });
 
   // Get ALL internal nodes for hierarchy analysis
-  const {
-    data: allInternalNodesData,
-    isLoading: loadingAllNodes,
-  } = useGetInternalNodesQuery({
-    search: "",
-    page: 1,
-    pageSize: 1000, // Get all nodes
-  });
+  const { data: allInternalNodesData, isLoading: loadingAllNodes } =
+    useGetInternalNodesQuery({
+      search: "",
+      page: 1,
+      pageSize: 1000, // Get all nodes
+    });
 
   const allNodes = useMemo(() => {
     if (!allInternalNodesData) return [];
-    return Array.isArray(allInternalNodesData) 
-      ? allInternalNodesData 
+    return Array.isArray(allInternalNodesData)
+      ? allInternalNodesData
       : allInternalNodesData.data || [];
   }, [allInternalNodesData]);
 
@@ -102,11 +96,11 @@ export default function InternalTaskDetail() {
     if (userProjectNode && allNodes.length > 0) {
       const currentNode = getUserCurrentNode(userProjectNode);
       setUserNode(currentNode);
-      
+
       // Check if user is at leaf node
       const isLeaf = isUserAtLeafNode(userProjectNode, allNodes);
       setUserAtLeafNode(isLeaf);
-      
+
       if (currentNode) {
         setInternalNodeId(currentNode.internal_node_id);
       }
@@ -156,7 +150,7 @@ export default function InternalTaskDetail() {
         type: getFileType(attachment.attachment.file_name),
         uploadedAt: attachment.attachment.created_at,
       })) || [],
-    [issue?.attachments]
+    [issue?.attachments],
   );
 
   const formatDate = (dateString: string) => {
@@ -195,7 +189,7 @@ export default function InternalTaskDetail() {
   const prevImage = () => {
     if (modalImageIndex !== null) {
       setModalImageIndex(
-        (modalImageIndex - 1 + issueFiles.length) % issueFiles.length
+        (modalImageIndex - 1 + issueFiles.length) % issueFiles.length,
       );
     }
   };
@@ -274,7 +268,7 @@ export default function InternalTaskDetail() {
         },
       ];
     }
-    
+
     // If user is at leaf node, they ONLY get base buttons (no assign, no transfer)
     return baseButtons;
   }, [markIssue, resolveIssue, assignIssue, userAtLeafNode]);
@@ -284,7 +278,7 @@ export default function InternalTaskDetail() {
   if (isLoading || userLoading || isLoadingNode || loadingAllNodes) {
     return <div>Loading...</div>;
   }
-  
+
   if (isError || !issue) {
     return <div>Error loading support request details</div>;
   }
@@ -307,26 +301,33 @@ export default function InternalTaskDetail() {
         >
           {/* User Position Indicator (Optional - for debugging) */}
           {userNode && (
-            <div className={`mb-4 p-3 rounded-lg border ${
-              userAtLeafNode 
-                ? "bg-yellow-50 border-yellow-200" 
-                : "bg-blue-50 border-blue-200"
-            }`}>
+            <div
+              className={`mb-4 p-3 rounded-lg border ${
+                userAtLeafNode
+                  ? "bg-yellow-50 border-yellow-200"
+                  : "bg-blue-50 border-blue-200"
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">
-                    <span className={
-                      userAtLeafNode ? "text-yellow-800" : "text-blue-800"
-                    }>
-                      Your Position: <span className="font-bold">{userNode.name}</span>
+                    <span
+                      className={
+                        userAtLeafNode ? "text-yellow-800" : "text-blue-800"
+                      }
+                    >
+                      Your Position:{" "}
+                      <span className="font-bold">{userNode.name}</span>
                       {userAtLeafNode && " (Final Level)"}
                     </span>
                   </p>
-                  <p className={`text-xs mt-1 ${
-                    userAtLeafNode ? "text-yellow-600" : "text-blue-600"
-                  }`}>
-                    {userAtLeafNode 
-                      ? "You are at the final level. You can only mark in progress and resolve." 
+                  <p
+                    className={`text-xs mt-1 ${
+                      userAtLeafNode ? "text-yellow-600" : "text-blue-600"
+                    }`}
+                  >
+                    {userAtLeafNode
+                      ? "You are at the final level. You can only mark in progress and resolve."
                       : "You can assign requests to the next level."}
                   </p>
                 </div>
@@ -360,10 +361,10 @@ export default function InternalTaskDetail() {
                       issue.status === "resolved"
                         ? "text-green-900 "
                         : issue.status === "in_progress"
-                        ? "text-blue-500"
-                        : issue.status === "closed"
-                        ? "text-red-500"
-                        : "text-gray-500"
+                          ? "text-blue-500"
+                          : issue.status === "closed"
+                            ? "text-red-500"
+                            : "text-gray-500"
                     }`}
                   >
                     {formatStatus(issue.status)}
@@ -384,7 +385,9 @@ export default function InternalTaskDetail() {
                     </p>
                   </div>
                   <div>
-                    <p className="font-semibold text-[#1E516A] mb-1">Category</p>
+                    <p className="font-semibold text-[#1E516A] mb-1">
+                      Category
+                    </p>
                     <p className="text-gray-800 text-sm">
                       {issue.category?.name || "N/A"}
                     </p>
@@ -498,14 +501,15 @@ export default function InternalTaskDetail() {
                       />
                     ))}
                   </div>
-                  
+
                   {/* Message for leaf node users */}
                   {userAtLeafNode && (
                     <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <p className="text-sm text-yellow-700">
-                        <span className="font-medium">Note:</span> As you are at the final level of the workflow, 
-                        you cannot assign or transfer this request. Your options are to mark it in progress 
-                        or resolve it once completed.
+                        <span className="font-medium">Note:</span> As you are at
+                        the final level of the workflow, you cannot assign or
+                        transfer this request. Your options are to mark it in
+                        progress or resolve it once completed.
                       </p>
                     </div>
                   )}

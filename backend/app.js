@@ -7,7 +7,7 @@ const { Server } = require("socket.io");
 const path = require("path");
 const bodyParser = require("body-parser");
 const helmet = require("helmet");
-
+const cookieParser = require("cookie-parser");
 dotenv.config();
 require("./cronjobs");
 const { swaggerUi, swaggerSpec } = require("./swagger");
@@ -50,6 +50,7 @@ const permissionRoute = require("./routers/permissionRoutes");
 
 const issueGuideLines = require("./routers/issueReportingGuidelineRoutes");
 const getAssignedProjectRoute = require("./routers/getAssignedProjectRoute");
+const refreshTokenRoute = require("./routers/refreshTokenRoutes");
 
 const app = express();
 const appServer = http.createServer(app);
@@ -70,6 +71,8 @@ const allowedOrigins = [
   "http://196.188.240.103:4037",
   "http://localhost:4037",
   "http://localhost:4000",
+  "http://localhost:5173", // Add Vite's default port
+  "http://127.0.0.1:5173", // Add this too
   process.env.FRONTEND_URL,
 ];
 
@@ -85,12 +88,27 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(cookieParser());
+app.use(bodyParser.json({ limit: "10mb" }));
+app.use(bodyParser.urlencoded({ extended: true, limit: "10mb" }));
 
 
-// ================== BODY PARSING ==================
+
+// ================== JSON Validation Middleware ==================
+// This will run after bodyParser, but we'll skip refresh token
 app.use(
   express.json({
     verify: (req, res, buf) => {
+      // Skip validation for refresh token endpoint
+      if (req.path === '/api/refresh-token') {
+        return;
+      }
+      
+      // Skip if body is empty
+      if (buf.length === 0) {
+        return;
+      }
+      
       try {
         JSON.parse(buf);
       } catch {
@@ -101,9 +119,8 @@ app.use(
     },
   })
 );
-
-app.use(bodyParser.json({ limit: "10mb" }));
-app.use(bodyParser.urlencoded({ extended: true, limit: "10mb" }));
+// 👇 Put refresh token route BEFORE the JSON validation
+app.use("/api/refresh-token", refreshTokenRoute);
 
 // ===========Serve static files (PDFs, uploads)=====================
 app.use(
@@ -187,6 +204,7 @@ app.use("/api/permissions", permissionRoute);
 app.use("/api/issue-guidelines", issueGuideLines);
 
 app.use("/api/flow", getAssignedProjectRoute);
+// app.use("/api/refresh-token", refreshTokenRoute);
 // ================== Root Endpoint ==================
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to Issue Tracking System API 🚀" });

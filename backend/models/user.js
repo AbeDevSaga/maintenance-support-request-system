@@ -49,6 +49,11 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "internal_node_id",
         as: "internalNode",
       });
+      User.hasMany(models.RefreshToken, {
+  foreignKey: "user_id",
+  as: "refreshTokens",
+});
+
       // Remove the one-to-many metric association
       this.belongsToMany(models.ProjectMetric, {
         through: models.ProjectMetricUser,

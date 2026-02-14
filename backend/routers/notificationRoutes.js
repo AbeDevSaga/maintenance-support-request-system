@@ -288,6 +288,7 @@ router.get("/stats", authenticateToken, controller.getNotificationStats);
  */
 router.get(
   "/user/:user_id",
+  authenticateToken,
   validateNotificationsQuery,
   controller.getNotificationsByUserId
 );
@@ -369,6 +370,7 @@ router.post(
  */
 router.post(
   "/send/parent-hierarchy",
+  authenticateToken,
   validateSendToParentHierarchy,
   controller.sendNotificationToParentHierarchyUsers
 );
@@ -397,6 +399,7 @@ router.post(
  */
 router.post(
   "/send/immediate-parent",
+  authenticateToken,
   validateSendToImmediateParent,
   controller.sendNotificationToImmediateParentHierarchy
 );
@@ -426,6 +429,7 @@ router.post(
 router.post(
   "/send/issue-solved",
   validateNotifyIssueCreator,
+  authenticateToken,
   controller.notifyIssueCreatorWhenSolved
 );
 
@@ -454,6 +458,7 @@ router.post(
 router.post(
   "/send/solver-confirmation",
   validateNotifySolver,
+  authenticateToken,
   controller.notifySolverOnConfirmation
 );
 
@@ -482,6 +487,7 @@ router.post(
 router.post(
   "/send/general",
   validateSendGeneralNotification,
+  authenticateToken,
   controller.sendGeneralNotification
 );
 
@@ -516,7 +522,7 @@ router.post(
  *       500:
  *         description: Internal server error
  */
-router.get("/:id", controller.getNotificationById);
+router.get("/:id", authenticateToken,controller.getNotificationById);
 
 // ================================
 // DELETE ROUTES
@@ -545,6 +551,6 @@ router.get("/:id", controller.getNotificationById);
  *       500:
  *         description: Internal server error
  */
-router.delete("/:id", controller.deleteNotification);
+router.delete("/:id", authenticateToken,controller.deleteNotification);
 
 module.exports = router;
