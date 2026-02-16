@@ -182,6 +182,7 @@ router.put(
 
 router.put(
   "/projects/:project_id/maintenance",
+  authenticateToken,
   projectController.updateProjectMaintenance
 );
 

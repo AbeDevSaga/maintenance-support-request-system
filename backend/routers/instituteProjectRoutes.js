@@ -5,6 +5,7 @@ const {
   validateInstituteProject,
   validateInstituteProjectId,
 } = require("../validators/instituteProjectValidator");
+const { authenticateToken } = require("../middlewares/authMiddleware");
 
 /**
  * @swagger
@@ -72,6 +73,7 @@ const {
  */
 router.post(
   "/",
+   authenticateToken,
   validateInstituteProject,
   instituteProjectController.createInstituteProject
 );
@@ -95,7 +97,7 @@ router.post(
  *       500:
  *         description: Internal server error
  */
-router.get("/", instituteProjectController.getInstituteProjects);
+router.get("/", authenticateToken, instituteProjectController.getInstituteProjects);
 
 /**
  * @swagger
@@ -128,6 +130,7 @@ router.get("/", instituteProjectController.getInstituteProjects);
  */
 router.get(
   "/:id",
+    authenticateToken,
   validateInstituteProjectId,
   instituteProjectController.getInstituteProjectById
 );
@@ -169,6 +172,7 @@ router.get(
  */
 router.put(
   "/:id",
+    authenticateToken,
   validateInstituteProjectId,
   validateInstituteProject,
   instituteProjectController.updateInstituteProject
@@ -201,6 +205,7 @@ router.put(
  */
 router.delete(
   "/:id",
+    authenticateToken,
   validateInstituteProjectId,
   instituteProjectController.deleteInstituteProject
 );

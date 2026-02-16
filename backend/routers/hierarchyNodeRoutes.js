@@ -220,6 +220,7 @@ router.delete(
  */
 router.get(
   "/parent-nodes/:project_id",
+   authenticateToken,
   validateParentNodesQuery,
   hierarchyNodeController.getParentNodes
 );

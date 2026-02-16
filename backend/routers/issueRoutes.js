@@ -92,11 +92,12 @@ router.post(
  *       200:
  *         description: List of issues
  */
-router.get("/", validateGetIssuesQuery, issueController.getIssues);
-router.get("/assigned/:user_id", issueController.getAssignedIssues);
+router.get("/", authenticateToken, validateGetIssuesQuery, issueController.getIssues);
+router.get("/assigned/:user_id", authenticateToken, issueController.getAssignedIssues);
 
 router.get(
   "/user/:id",
+   authenticateToken,
   validateIssueIdParam,
   issueController.getIssuesByUserId
 );
@@ -130,7 +131,7 @@ router.get(
 
 // getIssueByTicketingNumber
 
-router.get("/ticket/:ticket_number", issueController.getIssueByTicketingNumber);
+router.get("/ticket/:ticket_number", authenticateToken, issueController.getIssueByTicketingNumber);
 
 /**
  * @swagger
@@ -224,21 +225,24 @@ router.put(
 
 router.get(
   "/issues/hierarchy/:hierarchy_node_id/project/:project_id",
+    authenticateToken,
   validateHierarchyNodeIdParam,
   issueController.getIssuesByHierarchyNodeId
 );
 // Change from query to URL parameter
 router.get(
   "/issues-by-pairs/:pairs/user/:user_id",
+  authenticateToken,
   issueController.getIssuesByMultipleHierarchyNodes
 );
 
 router.get(
   "/issues-by-project/:projectIds",
+  authenticateToken,
   issueController.getProjectIssuesEscalatedOrTopHierarchy
 );
 
-router.delete("/:id", validateIssueIdParam, issueController.deleteIssue);
+router.delete("/:id", authenticateToken, validateIssueIdParam, issueController.deleteIssue);
 
 /**
  * @swagger

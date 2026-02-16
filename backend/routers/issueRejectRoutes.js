@@ -3,6 +3,7 @@ const router = express.Router();
 const controller = require("../controllers/Issue/issueRejectController");
 
 const { validateRejectIssue } = require("../validators/issueRejectValidator");
+const { authenticateToken } = require("../middlewares/authMiddleware");
 
 /**
  * @swagger
@@ -79,7 +80,7 @@ const { validateRejectIssue } = require("../validators/issueRejectValidator");
  *       500:
  *         description: Internal Server Error
  */
-router.post("/", validateRejectIssue, controller.rejectIssue);
+router.post("/", authenticateToken, validateRejectIssue, controller.rejectIssue);
 
 /**
  * @swagger
@@ -100,7 +101,7 @@ router.post("/", validateRejectIssue, controller.rejectIssue);
  *       500:
  *         description: Internal Error
  */
-router.get("/issue/:issue_id", controller.getRejectsByIssueId);
+router.get("/issue/:issue_id", authenticateToken, controller.getRejectsByIssueId);
 
 /**
  * @swagger
@@ -123,7 +124,7 @@ router.get("/issue/:issue_id", controller.getRejectsByIssueId);
  *       500:
  *         description: Internal Error
  */
-router.get("/id/:reject_id", controller.getRejectById);
+router.get("/id/:reject_id", authenticateToken, controller.getRejectById);
 
 /**
  * @swagger
@@ -146,7 +147,7 @@ router.get("/id/:reject_id", controller.getRejectById);
  *       500:
  *         description: Internal Error
  */
-router.get("/latest/:issue_id", controller.getLatestRejectByIssueId);
+router.get("/latest/:issue_id", authenticateToken, controller.getLatestRejectByIssueId);
 
 /**
  * @swagger
@@ -169,6 +170,6 @@ router.get("/latest/:issue_id", controller.getLatestRejectByIssueId);
  *       500:
  *         description: Internal Error
  */
-router.delete("/id/:reject_id", controller.deleteReject);
+router.delete("/id/:reject_id", authenticateToken, controller.deleteReject);
 
 module.exports = router;
