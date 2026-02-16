@@ -5,6 +5,7 @@ const {
   validateHierarchyNodeOrganization,
   validateHierarchyNodeOrganizationId,
 } = require("../validators/hierarchyNodeOrganizationValidator");
+const { authenticateToken } = require("../middlewares/authMiddleware");
 
 /**
  * @swagger
@@ -79,6 +80,7 @@ const {
  */
 router.post(
   "/",
+  authenticateToken,
   validateHierarchyNodeOrganization,
   hierarchyNodeOrganizationController.createHierarchyNodeOrganization
 );
@@ -97,6 +99,7 @@ router.post(
  */
 router.get(
   "/",
+  authenticateToken,
   hierarchyNodeOrganizationController.getHierarchyNodeOrganizations
 );
 
@@ -124,6 +127,7 @@ router.get(
  */
 router.get(
   "/:id",
+   authenticateToken,
   validateHierarchyNodeOrganizationId,
   hierarchyNodeOrganizationController.getHierarchyNodeOrganizationById
 );
@@ -160,6 +164,7 @@ router.get(
  */
 router.put(
   "/:id",
+   authenticateToken,
   validateHierarchyNodeOrganizationId,
   validateHierarchyNodeOrganization,
   hierarchyNodeOrganizationController.updateHierarchyNodeOrganization
@@ -189,6 +194,7 @@ router.put(
  */
 router.delete(
   "/:id",
+   authenticateToken,
   validateHierarchyNodeOrganizationId,
   hierarchyNodeOrganizationController.deleteHierarchyNodeOrganization
 );

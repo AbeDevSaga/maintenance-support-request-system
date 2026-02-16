@@ -3,6 +3,7 @@ const router = express.Router();
 const controller = require("../controllers/Issue/issueReRaiseController");
 
 const { validateReRaiseIssue } = require("../validators/issueReRaiseValidator");
+const { authenticateToken } = require("../middlewares/authMiddleware");
 
 /**
  * @swagger
@@ -79,7 +80,7 @@ const { validateReRaiseIssue } = require("../validators/issueReRaiseValidator");
  *       500:
  *         description: Internal Server Error
  */
-router.post("/", validateReRaiseIssue, controller.reRaiseIssue);
+router.post("/", authenticateToken, validateReRaiseIssue, controller.reRaiseIssue);
 
 /**
  * @swagger
@@ -100,7 +101,7 @@ router.post("/", validateReRaiseIssue, controller.reRaiseIssue);
  *       500:
  *         description: Internal Error
  */
-router.get("/issue/:issue_id", controller.getReRaisesByIssueId);
+router.get("/issue/:issue_id", authenticateToken, controller.getReRaisesByIssueId);
 
 /**
  * @swagger
@@ -123,7 +124,7 @@ router.get("/issue/:issue_id", controller.getReRaisesByIssueId);
  *       500:
  *         description: Internal Error
  */
-router.get("/id/:re_raise_id", controller.getReRaiseById);
+router.get("/id/:re_raise_id", authenticateToken, controller.getReRaiseById);
 
 /**
  * @swagger
@@ -146,7 +147,7 @@ router.get("/id/:re_raise_id", controller.getReRaiseById);
  *       500:
  *         description: Internal Error
  */
-router.get("/latest/:issue_id", controller.getLatestReRaiseByIssueId);
+router.get("/latest/:issue_id", authenticateToken, controller.getLatestReRaiseByIssueId);
 
 /**
  * @swagger
@@ -169,6 +170,6 @@ router.get("/latest/:issue_id", controller.getLatestReRaiseByIssueId);
  *       500:
  *         description: Internal Error
  */
-router.delete("/id/:re_raise_id", controller.deleteReRaise);
+router.delete("/id/:re_raise_id", authenticateToken, controller.deleteReRaise);
 
 module.exports = router;

@@ -516,6 +516,10 @@ const getUsers = async (req, res) => {
     // ====== Fetch users with associations ======
     const users = await User.findAll({
       where: whereClause,
+      attributes: { 
+    exclude: ['password'] 
+  },
+      
       include: [
         {
           model: Institute,

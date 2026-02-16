@@ -2,6 +2,8 @@
 const express = require("express");
 const router = express.Router();
 const controller = require("../controllers/issueResponseTimeController");
+const { authenticateToken } = require("../middlewares/authMiddleware");
+
 
 /**
  * @swagger
@@ -179,10 +181,10 @@ const controller = require("../controllers/issueResponseTimeController");
  *         description: Internal Server Error
  */
 
-router.post("/", controller.createResponseTime);
-router.get("/", controller.getAllResponseTimes);
-router.get("/:id", controller.getResponseTimeById);
-router.put("/:id", controller.updateResponseTime);
-router.delete("/:id", controller.deleteResponseTime);
+router.post("/",authenticateToken, controller.createResponseTime);
+router.get("/", authenticateToken, controller.getAllResponseTimes);
+router.get("/:id", authenticateToken, controller.getResponseTimeById);
+router.put("/:id", authenticateToken, controller.updateResponseTime);
+router.delete("/:id", authenticateToken, controller.deleteResponseTime);
 
 module.exports = router;

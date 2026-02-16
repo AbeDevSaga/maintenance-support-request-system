@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const controller = require("../controllers/issuePriorityController");
+const { authenticateToken } = require("../middlewares/authMiddleware");
 /**
  * @swagger
  * tags:
@@ -173,10 +174,10 @@ const controller = require("../controllers/issuePriorityController");
  *         description: Internal Server Error
  */
 
-router.post("/", controller.createPriority);
-router.get("/", controller.getAllPriorities);
-router.get("/:id", controller.getPriorityById);
-router.put("/:id", controller.updatePriority);
-router.delete("/:id", controller.deletePriority);
+router.post("/", authenticateToken, controller.createPriority);
+router.get("/", authenticateToken, controller.getAllPriorities);
+router.get("/:id", authenticateToken, controller.getPriorityById);
+router.put("/:id", authenticateToken, controller.updatePriority);
+router.delete("/:id", authenticateToken, controller.deletePriority);
 
 module.exports = router;

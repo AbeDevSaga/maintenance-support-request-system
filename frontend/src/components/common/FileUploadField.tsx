@@ -20,6 +20,7 @@ interface FileUploadFieldProps {
   accept?: string;
   error?: string;
   className?: string;
+  hint?: string;
   labelClass?: string;
   fieldClass?: string;
   multiple?: boolean;
@@ -35,6 +36,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
   accept = "image/*,.pdf",
   error,
   className = "",
+  hint = "",
   labelClass = "",
   fieldClass = "",
   multiple = true,
@@ -52,9 +54,10 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
       previewUrl?: string | null;
     }[]
   >([]);
-  const [previewFile, setPreviewFile] = useState<
-    { file_name: string; previewUrl?: string | null } | null
-  >(null);
+  const [previewFile, setPreviewFile] = useState<{
+    file_name: string;
+    previewUrl?: string | null;
+  } | null>(null);
 
   // Initialize with existing attachment IDs (value) from backend
   useEffect(() => {
@@ -100,7 +103,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
     });
 
     const uploadedFiles = (await Promise.all(uploadPromises)).filter(
-      Boolean
+      Boolean,
     ) as { attachment_id: string; file_name: string; previewUrl?: string }[];
 
     if (uploadedFiles.length > 0) {
@@ -115,7 +118,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
     try {
       await deleteAttachment(attachment_id).unwrap();
       const updatedFiles = files.filter(
-        (f) => f.attachment_id !== attachment_id
+        (f) => f.attachment_id !== attachment_id,
       );
       setFiles(updatedFiles);
       onChange(updatedFiles.map((f) => f.attachment_id));
@@ -161,7 +164,9 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
         ) : (
           <div className="flex flex-col items-center justify-center space-y-2">
             <Upload className="w-6 h-6 text-gray-500" />
-            <p className="text-sm text-gray-600">Click or drag to upload</p>
+            <p className="text-sm text-gray-600">
+              {hint || "Click or drag to upload"}
+            </p>
           </div>
         )}
       </div>
@@ -175,14 +180,13 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
               className="flex items-center justify-between border border-gray-200 rounded-md p-2 bg-gray-50"
             >
               <div className="flex items-center gap-2">
-                {file.previewUrl &&
-                  getFileType(file.file_name) === "image" && (
-                    <img
-                      src={file.previewUrl}
-                      alt="Preview"
-                      className="w-10 h-10 object-cover border rounded"
-                    />
-                  )}
+                {file.previewUrl && getFileType(file.file_name) === "image" && (
+                  <img
+                    src={file.previewUrl}
+                    alt="Preview"
+                    className="w-10 h-10 object-cover border rounded"
+                  />
+                )}
                 <span className="text-sm text-gray-700 truncate max-w-[100px]">
                   {file.file_name}
                 </span>
@@ -225,25 +229,27 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
               <X className="w-5 h-5" />
             </button>
 
-            <h3 className="text-lg font-semibold mb-4">{previewFile.file_name}</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {previewFile.file_name}
+            </h3>
 
             {getFileType(previewFile.file_name) === "image" &&
               previewFile.previewUrl && (
-              <img
-                src={previewFile.previewUrl}
-                alt={previewFile.file_name}
-                className="w-full h-auto max-h-[70vh] object-contain"
-              />
-            )}
+                <img
+                  src={previewFile.previewUrl}
+                  alt={previewFile.file_name}
+                  className="w-full h-auto max-h-[70vh] object-contain"
+                />
+              )}
 
             {getFileType(previewFile.file_name) === "pdf" &&
               previewFile.previewUrl && (
-              <iframe
-                src={previewFile.previewUrl}
-                className="w-full h-[70vh]"
-                title={previewFile.file_name}
-              />
-            )}
+                <iframe
+                  src={previewFile.previewUrl}
+                  className="w-full h-[70vh]"
+                  title={previewFile.file_name}
+                />
+              )}
 
             {!previewFile.previewUrl && (
               <p className="text-gray-600">Cannot preview this file type.</p>

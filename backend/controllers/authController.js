@@ -13,6 +13,7 @@ const {
   UserPosition,
   ProjectMetric,
   ProjectMetricUser,
+  RefreshToken,
   UserRoles,
   RolePermission,
 } = require("../models");
@@ -22,6 +23,11 @@ const { v4: uuidv4, validate: isUuid } = require("uuid");
 const { Op } = require("sequelize");
 const { generateRandomPassword } = require("../utils/password");
 const { sendEmail } = require("../utils/sendEmail");
+const crypto = require("crypto");
+
+const generateRefreshToken = () => {
+  return crypto.randomBytes(64).toString("hex");
+};
 
 const login = async (req, res) => {
   try {
@@ -29,6 +35,7 @@ const login = async (req, res) => {
 
     const user = await User.findOne({
       where: { email },
+      attributes: { include: ['password'] },
       include: [
         {
           model: Institute,
@@ -270,9 +277,25 @@ const login = async (req, res) => {
 
     // Generate JWT with comprehensive user data
     const token = jwt.sign(userDataForToken, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRATION_TIME || "12h",
+      expiresIn: process.env.JWT_EXPIRATION_TIME || "5m",
     });
+// 🔹 Generate Refresh Token
+const refreshToken = generateRefreshToken();
+const refreshExpiry = new Date();
+refreshExpiry.setDate(refreshExpiry.getDate() + 7); // 7 days
 
+await RefreshToken.create({
+  refresh_token: refreshToken,
+  user_id: user.user_id,
+  expires_at: refreshExpiry,
+  is_revoked: false,
+});
+// Send refresh token in httpOnly cookie
+res.cookie("refreshToken", refreshToken, {
+  httpOnly: true,
+  secure: true, // true in production (HTTPS)
+  sameSite: "Strict",
+});
     // Update last login
     await User.update(
       { last_login_at: new Date() },
@@ -282,6 +305,7 @@ const login = async (req, res) => {
     return res.status(200).json({
       message: "Login successful",
       token,
+      requiresPasswordChange: user.is_first_logged_in === true || !user.password_changed_at,
       user: {
         ...userDataForToken,
         phone_number: user.phone_number,
@@ -351,16 +375,30 @@ const login = async (req, res) => {
   }
 };
 
-// Logout (token invalidation example using a blacklist)
 const logout = async (req, res) => {
   try {
-    res.status(200).json({ message: "Logout successful" });
+    const { refreshToken } = req.cookies;
+
+    if (refreshToken) {
+      await RefreshToken.update(
+        { is_revoked: true },
+        { where: { refresh_token: refreshToken } }
+      );
+    }
+
+    res.clearCookie("refreshToken");
+
+    return res.status(200).json({
+      message: "Logout successful",
+    });
+
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: error.message });
+    return res.status(500).json({
+      message: "Internal server error",
+    });
   }
 };
+
 
 const getCurrentUser = async (req, res) => {
   try {

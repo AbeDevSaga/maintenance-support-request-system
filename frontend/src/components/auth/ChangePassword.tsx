@@ -17,7 +17,7 @@ type ChangePasswordForm = {
 };
 
 export default function ChangePassword() {
-  const {  logout } = useAuth();
+  const { logout } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const [updatePassword] = useUpdatePasswordMutation();
@@ -27,11 +27,21 @@ export default function ChangePassword() {
     watch,
     formState: { errors, isSubmitting },
   } = useForm<ChangePasswordForm>();
+  const getPasswordRequirements = (password: string) => {
+    return {
+      minLength: password.length >= 8,
+      hasUpperCase: /[A-Z]/.test(password),
+      hasLowerCase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecialChar: /[^A-Za-z0-9]/.test(password),
+    };
+  };
 
   const newPassword = watch("newPassword");
+  const requirements = getPasswordRequirements(newPassword || "");
 
   const onSubmit = async (data: ChangePasswordForm) => {
-    console.log(data,"data in change password");
+    console.log(data, "data in change password");
     try {
       const response = await updatePassword({
         new_password: data.newPassword,
@@ -43,12 +53,10 @@ export default function ChangePassword() {
         console.log("logged out successfully and navigating to login");
         toast.success("Password changed successfully");
         navigate("/login");
-
       }
     } catch (error: any) {
       toast.error(error.data.message);
     }
-    
   };
 
   return (
@@ -74,8 +82,21 @@ export default function ChangePassword() {
                 {...register("newPassword", {
                   required: "Password is required",
                   minLength: {
-                    value: 6,
+                    value: 8,
                     message: "Password must be at least 8 characters",
+                  },
+                  validate: {
+                    hasUpperCase: (value) =>
+                      /[A-Z]/.test(value) ||
+                      "Must include at least one uppercase letter",
+                    hasLowerCase: (value) =>
+                      /[a-z]/.test(value) ||
+                      "Must include at least one lowercase letter",
+                    hasNumber: (value) =>
+                      /[0-9]/.test(value) || "Must include at least one number",
+                    hasSpecialChar: (value) =>
+                      /[^A-Za-z0-9]/.test(value) ||
+                      "Must include at least one special character",
                   },
                 })}
               />
@@ -112,28 +133,73 @@ export default function ChangePassword() {
               </p>
             )}
           </div>
+          {newPassword && (
+            <div className="mt-3 space-y-1 text-xs">
+              <p
+                className={
+                  requirements.minLength ? "text-green-600" : "text-red-500"
+                }
+              >
+                {requirements.minLength ? "✓" : "✗"} At least 8 characters
+              </p>
+
+              <p
+                className={
+                  requirements.hasUpperCase ? "text-green-600" : "text-red-500"
+                }
+              >
+                {requirements.hasUpperCase ? "✓" : "✗"} One uppercase letter
+              </p>
+
+              <p
+                className={
+                  requirements.hasLowerCase ? "text-green-600" : "text-red-500"
+                }
+              >
+                {requirements.hasLowerCase ? "✓" : "✗"} One lowercase letter
+              </p>
+
+              <p
+                className={
+                  requirements.hasNumber ? "text-green-600" : "text-red-500"
+                }
+              >
+                {requirements.hasNumber ? "✓" : "✗"} One number
+              </p>
+
+              <p
+                className={
+                  requirements.hasSpecialChar
+                    ? "text-green-600"
+                    : "text-red-500"
+                }
+              >
+                {requirements.hasSpecialChar ? "✓" : "✗"} One special character
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-5">
             {/* Submit */}
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full  bg-[#0C4A6E]"
-          >
-            Update Password
-          </Button>
-          {/* cancel button */}
-          <Button
-            type="button"
-            // remove token from local storage
-            onClick={async () => {
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full  bg-[#0C4A6E]"
+            >
+              Update Password
+            </Button>
+            {/* cancel button */}
+            <Button
+              type="button"
+              // remove token from local storage
+              onClick={async () => {
                 await logout();
                 navigate("/login");
-            }}
-            className="w-full  bg-gray-300  font-medium text-gray-900 rounded-md hover:bg-gray-400"
-          >
-            Cancel
-          </Button>
+              }}
+              className="w-full  bg-gray-300  font-medium text-gray-900 rounded-md hover:bg-gray-400"
+            >
+              Cancel
+            </Button>
           </div>
         </form>
       </div>
