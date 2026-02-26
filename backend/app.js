@@ -209,6 +209,9 @@ app.use("/api/flow", getAssignedProjectRoute);
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to Issue Tracking System API 🚀" });
 });
+app.get("/unauthorized", (req, res) => {
+  res.status(403).send("You are not authorized to access this page.");
+});
 
 // ================== Error Handler ==================
 app.use((err, req, res, next) => {

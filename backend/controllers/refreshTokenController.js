@@ -23,71 +23,7 @@ const generateRefreshToken = () => {
   return crypto.randomBytes(64).toString("hex");
 };
 const jwt = require("jsonwebtoken");
-// const refreshAccessToken = async (req, res) => {
-//   try {
-//     const { refreshToken } = req.cookies;
 
-//     if (!refreshToken) {
-//       return res.status(401).json({ message: "Refresh token required" });
-//     }
-
-//     const storedToken = await RefreshToken.findOne({
-//       where: {
-//         refresh_token: refreshToken,
-//         is_revoked: false,
-//       },
-//     });
-
-//     if (!storedToken) {
-//       return res.status(403).json({ message: "Invalid refresh token" });
-//     }
-
-//     if (new Date(storedToken.expires_at) < new Date()) {
-//       return res.status(403).json({ message: "Refresh token expired" });
-//     }
-
-//     // 🔥 ROTATION — revoke old token
-//     storedToken.is_revoked = true;
-//     await storedToken.save();
-
-//     const user = await User.findOne({
-//       where: { user_id: storedToken.user_id },
-//     });
-
-//     // Generate NEW tokens
-//     const newAccessToken = jwt.sign(
-//       { user_id: user.user_id },
-//       process.env.JWT_SECRET,
-//       { expiresIn: "15m" }
-//     );
-
-//     const newRefreshToken = generateRefreshToken();
-
-//     const newExpiry = new Date();
-//     newExpiry.setDate(newExpiry.getDate() + 7);
-
-//     await RefreshToken.create({
-//       refresh_token: newRefreshToken,
-//       user_id: user.user_id,
-//       expires_at: newExpiry,
-//       is_revoked: false,
-//     });
-
-//     res.cookie("refreshToken", newRefreshToken, {
-//       httpOnly: true,
-//       secure: true,
-//     sameSite: "None",
-//     });
-
-//     return res.status(200).json({
-//       accessToken: newAccessToken,
-//     });
-
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({ message: "Internal server error" });
-//   }
-// };
 const refreshAccessToken = async (req, res) => {
   try {
     const { refreshToken } = req.cookies;

@@ -187,7 +187,7 @@ const login = async (req, res) => {
         role.permissions.forEach((permission) => {
           if (!allPermissions.has(permission.permission_id)) {
             allPermissions.set(permission.permission_id, {
-              permission_id: permission.permission_id,
+              // permission_id: permission.permission_id,
               action: permission.action,
               resource: permission.resource,
             });
@@ -223,6 +223,11 @@ const login = async (req, res) => {
 
     // Convert Map to array
     const uniquePermissions = Array.from(allPermissions.values());
+      const formattedPermissions = uniquePermissions.map(p => ({
+    resource: p.resource,
+    action: p.action
+    // Don't include permission_id in JWT to keep token smaller
+  }));
     // Format user data for token
     const userDataForToken = {
       user_id: user.user_id,
@@ -258,9 +263,10 @@ const login = async (req, res) => {
       // Include global roles and permissions
       // Include unique flattened permissions
       permissions: uniquePermissions,
+      permission:formattedPermissions,
       roles: user.roles
         ? user.roles.map((role) => ({
-            role_id: role.role_id,
+ 
             name: role.name,
           }))
         : [],
@@ -322,11 +328,11 @@ res.cookie("refreshToken", refreshToken, {
               }
             : null,
           role: pr.role ? pr.role.name : null,
-          role_id: pr.role ? pr.role.role_id : null,
-          sub_role_id: pr.subRole ? pr.subRole.sub_role_id : null,
+          // role_id: pr.role ? pr.role.role_id : null,
+          
           permissions:
             pr.role?.permissions?.map((p) => ({
-              permission_id: p.permission_id,
+              // permission_id: p.permission_id,
               action: p.action,
               resource: p.resource,
             })) || [],
@@ -349,10 +355,10 @@ res.cookie("refreshToken", refreshToken, {
               }
             : null,
           role: ipr.role ? ipr.role.name : null,
-          role_id: ipr.role ? ipr.role.role_id : null,
+          // role_id: ipr.role ? ipr.role.role_id : null,
           permissions:
             ipr.role?.permissions?.map((p) => ({
-              permission_id: p.permission_id,
+              // permission_id: p.permission_id,
               action: p.action,
               resource: p.resource,
             })) || [],
@@ -412,6 +418,9 @@ const getCurrentUser = async (req, res) => {
 
     const user = await User.findOne({
       where: { user_id: decoded.user_id },
+        attributes: {
+    exclude: ["password"], // ✅ Exclude password field
+  },
       include: [
         {
           model: Institute,
@@ -555,7 +564,7 @@ const getCurrentUser = async (req, res) => {
         // Global roles with permissions
         roles: user.roles
           ? user.roles.map((role) => ({
-              role_id: role.role_id,
+              // role_id: role.role_id,
               name: role.name,
             }))
           : [],
@@ -582,9 +591,8 @@ const getCurrentUser = async (req, res) => {
               }
             : null,
           role: pr.role ? pr.role.name : null,
-          role_id: pr.role ? pr.role.role_id : null,
-          sub_role: pr.subRole ? pr.subRole.name : null,
-          sub_role_id: pr.subRole ? pr.subRole.sub_role_id : null,
+          // role_id: pr.role ? pr.role.role_id : null,
+
           hierarchy_node: pr.hierarchyNode
             ? {
                 hierarchy_node_id: pr.hierarchyNode.hierarchy_node_id,
@@ -612,7 +620,7 @@ const getCurrentUser = async (req, res) => {
               }
             : null,
           role: ipr.role ? ipr.role.name : null,
-          role_id: ipr.role ? ipr.role.role_id : null,
+          
           internal_node: ipr.internalNode
             ? {
                 internal_node_id: ipr.internalNode.internal_node_id,

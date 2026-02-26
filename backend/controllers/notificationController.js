@@ -17,6 +17,13 @@ const NotificationService = require("../services/notificationService");
 const getNotificationById = async (req, res) => {
   try {
     const { id } = req.params;
+    const user_id = req.user?.user_id;
+    if(!user_id){
+            return res.status(400).json({
+        success: false,
+        message: "You are an authorized",
+      });
+    }
 
     if (!id) {
       return res.status(400).json({
@@ -81,7 +88,15 @@ const getNotificationById = async (req, res) => {
 // ================================
 const getNotificationsByUserId = async (req, res) => {
   try {
-    const { user_id } = req.params;
+    
+        const user_id = req.user?.user_id;
+
+    if (!user_id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
     // Get query parameters
     const {
@@ -203,6 +218,13 @@ const markNotificationAsRead = async (req, res) => {
   try {
     const { notification_id } = req.body;
     const user_id = req.user?.user_id;
+        if (!user_id) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "please authenticate first",
+      });
+    }
 
     if (!notification_id) {
       await t.rollback();
@@ -778,7 +800,12 @@ const deleteNotification = async (req, res) => {
   try {
     const { id } = req.params;
     const user_id = req.user?.user_id;
-
+if (!user_id) {
+  return res.status(401).json({
+    success: false,
+    message: "Unauthorized access",
+  });
+}
     if (!id) {
       await t.rollback();
       return res.status(400).json({
@@ -828,7 +855,12 @@ const deleteNotification = async (req, res) => {
 const getNotificationStats = async (req, res) => {
   try {
     const user_id = req.user?.user_id;
-
+if (!user_id) {
+  return res.status(401).json({
+    success: false,
+    message: "Unauthorized access",
+  });
+}
     // Get counts by type
     const countsByType = await Notification.findAll({
       where: { receiver_id: user_id },

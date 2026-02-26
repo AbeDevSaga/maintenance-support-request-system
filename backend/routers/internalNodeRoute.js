@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const internalNodeController = require("../controllers/internalNodeController");
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken ,checkPermission} = require("../middlewares/authMiddleware");
 const {
   validateCreateInternalNode,
   validateInternalNodeId,
@@ -59,11 +59,12 @@ router.post(
   "/",
   authenticateToken,
   validateCreateInternalNode,
+  
   internalNodeController.createInternalNode
 );
 
 // Get all internal nodes
-router.get("/", authenticateToken, internalNodeController.getInternalNodes);
+router.get("/", authenticateToken,checkPermission('request_flows','read'), internalNodeController.getInternalNodes);
 
 // Get top-level (parent) internal nodes
 router.get(

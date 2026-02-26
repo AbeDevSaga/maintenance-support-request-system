@@ -137,7 +137,7 @@ const createRole = async (req, res) => {
             role_sub_roles_permission_id: uuidv4(),
             roles_sub_roles_id: roleSubRole.roles_sub_roles_id,
             permission_id: pid,
-            assigned_by: "49f1a85c-17c9-401b-9cce-3185cc2ccc4e",
+            assigned_by: req.user?.user_id,
             assigned_at: new Date(),
             created_at: new Date(),
             updated_at: new Date(),
@@ -177,7 +177,7 @@ const createRole = async (req, res) => {
         role_permission_id: uuidv4(),
         role_id: role.role_id,
         permission_id: pid,
-        assigned_by: "8993455e-312b-433f-b8d7-15491875d38a",
+       assigned_by: req.user?.user_id,
         assigned_at: new Date(),
         created_at: new Date(),
         updated_at: new Date(),
@@ -192,7 +192,7 @@ const createRole = async (req, res) => {
     const createdRole = await Role.findOne({
       where: { role_id: role.role_id },
       include: [
-        {
+        {  
           model: RoleSubRole,
           as: "roleSubRoles",
           include: [

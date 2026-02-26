@@ -1,4 +1,3 @@
-// src/contexts/AuthContext.tsx
 import React, {
   createContext,
   ReactNode,
@@ -11,9 +10,11 @@ import {
   AuthContextType,
   AuthResponse,
   LoginCredentials,
-  RegisterData,
   User,
 } from "../types/auth";
+
+// Memory storage for user
+import { setAuthUser, clearAuthData } from "../redux/baseApi";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -27,31 +28,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const [loginMutation] = useLoginMutation();
   const [logoutMutation] = useLogoutMutation();
 
-  // src/contexts/AuthContext.tsx (updated useEffect)
+  // Restore session from memory (user object only)
   useEffect(() => {
     const restoreSession = async () => {
       try {
-        const storedToken = localStorage.getItem("authToken");
-        const storedUser = localStorage.getItem("user");
-
-        if (storedToken && storedUser) {
-          // Optional: You can validate the token here with an API call
-          setToken(storedToken);
-          setUser(JSON.parse(storedUser));
-          console.log("Auth restored");
-        }
-      } catch (error) {
-        console.error("Failed to restore session:", error);
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("user");
-      } finally {
+        setLoading(false);
+        console.log("Auth session will be established via API calls");
+      } catch (err) {
+        console.error("Failed to restore session:", err);
         setLoading(false);
       }
     };
@@ -60,23 +50,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   // LOGIN
-  // src/contexts/AuthContext.tsx
-  // In the login function, add setLoading to prevent race conditions:
   const login = async (
-    credentials: LoginCredentials
+    credentials: LoginCredentials,
   ): Promise<AuthResponse> => {
     try {
       setError(null);
-      setLoading(true); // Set loading to true during login
+      setLoading(true);
 
       const response = await loginMutation(credentials).unwrap();
-      const { token: authToken, user: userData } = response;
+      const { user: userData } = response;
 
       setUser(userData);
-      setToken(authToken);
 
-      localStorage.setItem("authToken", authToken);
-      localStorage.setItem("user", JSON.stringify(userData));
+      // Store user in memory
+      setAuthUser(userData);
 
       return response;
     } catch (err: any) {
@@ -84,42 +71,48 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       setError(message);
       throw new Error(message);
     } finally {
-      setLoading(false); // Always set loading to false
+      setLoading(false);
     }
   };
 
+  // LOGOUT
   const logout = async (): Promise<void> => {
     try {
       await logoutMutation().unwrap();
-    } catch {}
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      setUser(null);
 
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
+      // Clear memory storage
+      clearAuthData();
+    }
   };
 
+  // Update user profile in memory
   const updateProfile = async (profileData: Partial<User>): Promise<User> => {
     const updated = { ...user, ...profileData } as User;
     setUser(updated);
-    localStorage.setItem("user", JSON.stringify(updated));
+    setAuthUser(updated);
     return updated;
   };
 
+  // Permissions
   const userPermissionsSet = new Set(
-    user?.permissions.map((p) => `${p.resource}:${p.action}`.toUpperCase())
+    user?.permissions?.map((p) => `${p.resource}:${p.action}`.toUpperCase()) ||
+      [],
   );
 
-  const hasPermission = (permission: string) =>
+  const hasPermission = (permission: string): boolean =>
     userPermissionsSet.has(permission.toUpperCase());
-  const hasAnyPermission = (permissions: string[]) =>
+  const hasAnyPermission = (permissions: string[]): boolean =>
     permissions.some((p) => userPermissionsSet.has(p.toUpperCase()));
-  const hasAllPermissions = (permissions: string[]) =>
+  const hasAllPermissions = (permissions: string[]): boolean =>
     permissions.every((p) => userPermissionsSet.has(p.toUpperCase()));
 
   const value: AuthContextType = {
     user,
-    token,
+    token: null, // token no longer used
     loading,
     error,
     login,
@@ -132,7 +125,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       throw new Error("Not implemented");
     },
     clearError: () => setError(null),
-    isAuthenticated: !!user && !!token,
+    isAuthenticated: !!user,
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,

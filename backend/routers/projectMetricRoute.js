@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken,checkPermission } = require("../middlewares/authMiddleware");
 
 const {
   createProjectMetric,
@@ -37,18 +37,20 @@ router.post(
   "/",
   authenticateToken,
   validateCreateProjectMetric,
+  checkPermission('human_resources','create'),
   createProjectMetric
 );
 
-router.get("/", authenticateToken, getProjectMetrics);
+router.get("/", authenticateToken,checkPermission('human_resources','read'), getProjectMetrics);
 
-router.get("/:id", authenticateToken, validateUUIDParam, getProjectMetricById);
+router.get("/:id", authenticateToken, validateUUIDParam, checkPermission('human_resources','read'),getProjectMetricById);
 
 router.put(
   "/:id",
   authenticateToken,
   validateUUIDParam,
   validateUpdateProjectMetric,
+  checkPermission('human_resources','update'),
   updateProjectMetric
 );
 
@@ -56,6 +58,7 @@ router.delete(
   "/:id",
   authenticateToken,
   validateUUIDParam,
+  checkPermission('human_resources','delete'),
   deleteProjectMetric
 );
 

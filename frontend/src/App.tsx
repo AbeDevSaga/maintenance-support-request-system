@@ -232,7 +232,7 @@ function AppContent() {
             <Route path="/internal/dashboard" element={<Home />} />
           </Route>
           <Route path="*" element={<NotFound />} />
-        </Routes>
+        </Routes>  
       </BreadcrumbProvider>
     </Router>
   );

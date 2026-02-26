@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const projectController = require("../controllers/projectController");
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken,checkPermission } = require("../middlewares/authMiddleware");
 const {
   validateCreateProject,
   validateUpdateProject,
@@ -98,6 +98,7 @@ router.post(
   "/",
   authenticateToken,
   validateCreateProject,
+  checkPermission('projects','create'),
   projectController.createProject
 );
 
@@ -117,7 +118,7 @@ router.post(
  *               items:
  *                 $ref: '#/components/schemas/Project'
  */
-router.get("/", authenticateToken, projectController.getProjects);
+router.get("/", authenticateToken,   checkPermission('projects','read'),projectController.getProjects);
 
 /**
  * @swagger
@@ -141,6 +142,7 @@ router.get("/", authenticateToken, projectController.getProjects);
 router.get(
   "/:id",
   authenticateToken,
+  checkPermission('projects','read'),
   validateProjectId,
   projectController.getProjectById
 );
@@ -177,12 +179,14 @@ router.put(
   authenticateToken,
   validateProjectId,
   validateUpdateProject,
+  checkPermission('projects','update'),
   projectController.updateProject
 );
 
 router.put(
   "/projects/:project_id/maintenance",
   authenticateToken,
+  checkPermission('projects','update'),
   projectController.updateProjectMaintenance
 );
 
@@ -252,6 +256,7 @@ router.put(
 router.post(
   "/assign-user",
   authenticateToken,
+  checkPermission('projects','assign_users'),
   projectController.assignUserToProject
 );
 
@@ -302,6 +307,7 @@ router.post(
 router.post(
   "/assign-internal-user",
   authenticateToken,
+  checkPermission('projects','assign_users'),
   projectController.assignInternalUsersToProject
 );
 
@@ -309,6 +315,7 @@ router.delete(
   "/:id",
   authenticateToken,
   validateProjectId,
+  checkPermission('projects','delete'),
   projectController.deleteProject
 );
 
@@ -368,6 +375,7 @@ router.post(
 router.post(
   "/remove-user",
   authenticateToken,
+  checkPermission('projects','remove_users'),
   projectController.removeUserFromProject
 );
 

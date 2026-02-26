@@ -8,7 +8,7 @@ const {
   validateIssueIdParam,
   validateHierarchyNodeIdParam,
 } = require("../validators/issueValidator");
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken,checkPermission } = require("../middlewares/authMiddleware");
 /**
  * @swagger
  * tags:
@@ -66,20 +66,21 @@ router.post(
   "/",
   authenticateToken,
   validateCreateIssue,
+  checkPermission('request','create'),
   issueController.createIssue
 );
 
 router.post(
   "/accept",
   authenticateToken,
-
+  checkPermission('request','accept'),
   issueController.acceptIssue
 );
 
 router.post(
   "/confirm",
   authenticateToken,
-
+ checkPermission('request','confirm'),
   issueController.confirmIssueResolved
 );
 /**
@@ -92,7 +93,7 @@ router.post(
  *       200:
  *         description: List of issues
  */
-router.get("/", authenticateToken, validateGetIssuesQuery, issueController.getIssues);
+router.get("/", authenticateToken, validateGetIssuesQuery, checkPermission('request','read'), issueController.getIssues);
 router.get("/assigned/:user_id", authenticateToken, issueController.getAssignedIssues);
 
 router.get(
@@ -126,6 +127,7 @@ router.get(
   "/:id",
   authenticateToken,
   validateIssueIdParam,
+   checkPermission('request','read'),
   issueController.getIssueById
 );
 
@@ -178,6 +180,7 @@ router.put(
   authenticateToken,
   validateIssueIdParam,
   validateUpdateIssue,
+   checkPermission('request','update'),
   issueController.updateIssue
 );
 
@@ -227,22 +230,25 @@ router.get(
   "/issues/hierarchy/:hierarchy_node_id/project/:project_id",
     authenticateToken,
   validateHierarchyNodeIdParam,
+   checkPermission('request','read'),
   issueController.getIssuesByHierarchyNodeId
 );
 // Change from query to URL parameter
 router.get(
   "/issues-by-pairs/:pairs/user/:user_id",
   authenticateToken,
+   checkPermission('request','read'),
   issueController.getIssuesByMultipleHierarchyNodes
 );
 
 router.get(
   "/issues-by-project/:projectIds",
   authenticateToken,
+   checkPermission('request','read'),
   issueController.getProjectIssuesEscalatedOrTopHierarchy
 );
 
-router.delete("/:id", authenticateToken, validateIssueIdParam, issueController.deleteIssue);
+router.delete("/:id", authenticateToken, validateIssueIdParam, checkPermission('request','delete'), issueController.deleteIssue);
 
 /**
  * @swagger
@@ -273,6 +279,7 @@ router.delete("/:id", authenticateToken, validateIssueIdParam, issueController.d
 router.get(
   "/escalated/null-tier",
   authenticateToken,
+   checkPermission('request','read'),
   issueController.getEscalatedIssuesWithNullTier
 );
 

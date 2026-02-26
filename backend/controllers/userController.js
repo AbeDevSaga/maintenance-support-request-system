@@ -289,7 +289,15 @@ const createUser = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "User registered globally (no roles assigned yet)",
-      data: user,
+     data: {
+       
+        full_name: user.full_name,
+        email: user.email,
+        phone_number: user.phone_number,
+        user_type: userType.name,
+        is_active: user.is_active,
+        created_at: user.created_at
+      },
     });
   } catch (error) {
     if (!t.finished) await t.rollback();
@@ -465,7 +473,15 @@ const updateUser = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "User updated successfully.",
-      data: user,
+     data: {
+        user_id: user.user_id,
+        full_name: user.full_name,
+        email: user.email,
+        phone_number: user.phone_number,
+       
+        is_active: user.is_active,
+        created_at: user.created_at
+      },
     });
   } catch (error) {
     if (!t.finished) await t.rollback();

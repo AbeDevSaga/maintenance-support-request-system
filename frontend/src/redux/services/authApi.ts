@@ -1,5 +1,5 @@
-// src/redux/apis/authApi.ts
 import { baseApi } from "../baseApi";
+import { setAuthToken, setAuthUser, clearAuthData } from "../baseApi"; // Import memory functions
 import type { AuthResponse, LoginCredentials } from "../../types/auth";
 
 type UpdatePasswordPayload = {
@@ -15,12 +15,12 @@ export const authApi = baseApi.injectEndpoints({
         body: credentials,
       }),
       transformResponse: (response: any) => {
-        // Store token and user immediately after login
+        // Store token and user in memory instead of localStorage
         if (response.token) {
-          localStorage.setItem("authToken", response.token);
+          setAuthToken(response.token);
         }
         if (response.user) {
-          localStorage.setItem("user", JSON.stringify(response.user));
+          setAuthUser(response.user);
         }
 
         return {
@@ -42,17 +42,17 @@ export const authApi = baseApi.injectEndpoints({
         try {
           await queryFulfilled;
         } finally {
-          // Clear token and user on logout
-          localStorage.removeItem("authToken");
-          localStorage.removeItem("user");
+          // Clear token and user from memory
+          clearAuthData();
         }
       },
       invalidatesTags: ["User"],
     }),
 
+
     getCurrentUser: builder.query<AuthResponse["user"], void>({
       query: () => ({
-        url: "/auth/me", // optional, backend route for session persistence
+        url: "/auth/me",
         method: "GET",
       }),
       providesTags: ["User"],
@@ -76,6 +76,6 @@ export const authApi = baseApi.injectEndpoints({
 export const {
   useLoginMutation,
   useLogoutMutation,
-  useGetCurrentUserQuery,
+  useGetCurrentUserQuery, 
   useUpdatePasswordMutation,
 } = authApi;

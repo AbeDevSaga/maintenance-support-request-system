@@ -5,7 +5,7 @@ const {
   validateUpdateUser,
   validateCreateUser,
 } = require("../validators/userValidator");
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken,checkPermission } = require("../middlewares/authMiddleware");
 
 const {
   createUser,
@@ -128,7 +128,7 @@ const {
  *       500:
  *         description: Server error
  */
-router.post("/", validateCreateUser, authenticateToken, createUser);
+router.post("/", validateCreateUser, authenticateToken,checkPermission('users', 'create'), createUser);
 
 /**
  * @swagger
@@ -171,7 +171,7 @@ router.post("/", validateCreateUser, authenticateToken, createUser);
  *       500:
  *         description: Server error
  */
-router.get("/", authenticateToken,getUsers);
+router.get("/", authenticateToken,checkPermission('users','read'),getUsers);
 /**
  * @swagger
  * /api/users/user-types:
@@ -234,9 +234,9 @@ router.get("/", authenticateToken,getUsers);
  *                   example: Database connection error
  */
 
-router.use("/user-types",authenticateToken, getUserTypes);
+router.use("/user-types",authenticateToken,checkPermission('users', 'read'), getUserTypes);
 
-router.use("/user-positions",authenticateToken, getUserPositions);
+router.use("/user-positions",authenticateToken,checkPermission('users', 'read'), getUserPositions);
 
 /**
  * @swagger
@@ -262,7 +262,9 @@ router.use("/user-positions",authenticateToken, getUserPositions);
  */
 router.get(
   "/institute/:institute_id",
+
   authenticateToken,
+  checkPermission('users', 'read'),
   getUsersByInstituteId
 );
 
@@ -415,7 +417,7 @@ router.get(
  *       404:
  *         description: User not found
  */
-router.get("/:id", authenticateToken, getUserById);
+router.get("/:id", authenticateToken,checkPermission('users', 'read'), getUserById);
 
 /**
  * @swagger
@@ -467,7 +469,7 @@ router.get("/:id", authenticateToken, getUserById);
  *       500:
  *         description: Server error
  */
-router.put("/:id", authenticateToken, validateUpdateUser, updateUser);
+router.put("/:id", authenticateToken, validateUpdateUser,checkPermission('users', 'update'), updateUser);
 
 /**
  * @swagger
@@ -490,7 +492,7 @@ router.put("/:id", authenticateToken, validateUpdateUser, updateUser);
  *       404:
  *         description: User not found
  */
-router.delete("/:id", authenticateToken, deleteUser);
+router.delete("/:id", authenticateToken,checkPermission('users', 'delete'), deleteUser);
 
 /**
  * @swagger
@@ -523,7 +525,7 @@ router.delete("/:id", authenticateToken, deleteUser);
  *       404:
  *         description: User not found
  */
-router.patch("/:id/toggle-status", authenticateToken, toggleUserActiveStatus);
+router.patch("/:id/toggle-status", authenticateToken, checkPermission('users', 'delete'),toggleUserActiveStatus);
 
 /**
  * @swagger
