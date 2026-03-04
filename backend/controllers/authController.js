@@ -23,10 +23,12 @@ const { v4: uuidv4, validate: isUuid } = require("uuid");
 const { Op } = require("sequelize");
 const { generateRandomPassword } = require("../utils/password");
 const { sendEmail } = require("../utils/sendEmail");
+const { parseDuration, DEFAULT_COOKIE_DURATIONS } = require("../utils/parseDuration");
 const crypto = require("crypto");
 
 const generateRefreshToken = () => {
-  return crypto.randomBytes(64).toString("hex");
+  const length = parseInt(process.env.REFRESH_TOKEN_LENGTH) || 32;
+  return crypto.randomBytes(length).toString("hex");
 };
 
 const login = async (req, res) => {
@@ -72,21 +74,7 @@ const login = async (req, res) => {
           model: Role,
           as: "roles",
           through: { attributes: [] },
-          include: [
-            {
-              model: Permission,
-              as: "permissions",
-              through: {
-                model: RolePermission,
-                attributes: ["is_active"],
-              },
-              attributes: ["permission_id", "action", "resource"],
-              where: {
-                is_active: true,
-              },
-              required: false,
-            },
-          ],
+          attributes: ["role_id", "name"], // Only load role names, not permissions
         },
         {
           model: ProjectMetric,
@@ -105,22 +93,7 @@ const login = async (req, res) => {
             {
               model: Role,
               as: "role",
-              attributes: ["role_id", "name"],
-              include: [
-                {
-                  model: Permission,
-                  as: "permissions",
-                  through: {
-                    model: RolePermission,
-                    attributes: ["is_active"],
-                  },
-                  attributes: ["permission_id", "action", "resource"],
-                  where: {
-                    is_active: true,
-                  },
-                  required: false,
-                },
-              ],
+              attributes: ["role_id", "name"], // Remove nested permissions
             },
             {
               model: HierarchyNode,
@@ -141,22 +114,7 @@ const login = async (req, res) => {
             {
               model: Role,
               as: "role",
-              attributes: ["role_id", "name"],
-              include: [
-                {
-                  model: Permission,
-                  as: "permissions",
-                  through: {
-                    model: RolePermission,
-                    attributes: ["is_active"],
-                  },
-                  attributes: ["permission_id", "action", "resource"],
-                  where: {
-                    is_active: true,
-                  },
-                  required: false,
-                },
-              ],
+              attributes: ["role_id", "name"], // Remove nested permissions
             },
             {
               model: InternalNode,
@@ -178,57 +136,6 @@ const login = async (req, res) => {
     if (!isMatch)
       return res.status(401).json({ message: "Invalid email or password" });
 
-    // Collect all unique permissions from all roles
-    const allPermissions = new Map();
-
-    // Helper function to add permissions from a role
-    const addRolePermissions = (role) => {
-      if (role && role.permissions) {
-        role.permissions.forEach((permission) => {
-          if (!allPermissions.has(permission.permission_id)) {
-            allPermissions.set(permission.permission_id, {
-              // permission_id: permission.permission_id,
-              action: permission.action,
-              resource: permission.resource,
-            });
-          }
-        });
-      }
-    };
-
-    // Add permissions from global roles
-    if (user.roles) {
-      user.roles.forEach((role) => {
-        addRolePermissions(role);
-      });
-    }
-
-    // Add permissions from project roles
-    if (user.projectRoles) {
-      user.projectRoles.forEach((projectRole) => {
-        if (projectRole.role) {
-          addRolePermissions(projectRole.role);
-        }
-      });
-    }
-
-    // Add permissions from internal project roles
-    if (user.internalProjectUserRoles) {
-      user.internalProjectUserRoles.forEach((internalRole) => {
-        if (internalRole.role) {
-          addRolePermissions(internalRole.role);
-        }
-      });
-    }
-
-    // Convert Map to array
-    const uniquePermissions = Array.from(allPermissions.values());
-      const formattedPermissions = uniquePermissions.map(p => ({
-    resource: p.resource,
-    action: p.action
-    // Don't include permission_id in JWT to keep token smaller
-  }));
-    
     // Minimal data for JWT token (only essential auth data - keeps cookie small)
     const minimalUserDataForToken = {
       user_id: user.user_id,
@@ -271,7 +178,8 @@ const login = async (req, res) => {
           }
         : null,
   
-       permissions: uniquePermissions.map(p => `${p.resource}:${p.action}`),
+      // Permissions should be loaded separately when needed
+      permissions: [],
        
      
       roles: user.roles
@@ -286,7 +194,7 @@ const login = async (req, res) => {
             project_metric_id: metric.project_metric_id,
             name: metric.name,
             description: metric.description,
-            value: metric.ProjectMetricUser.value,
+            value: metric.ProjectMetricUser?.value,
           }))
         : [],
     };
@@ -307,8 +215,8 @@ await RefreshToken.create({
   is_revoked: false,
 });
 // console.log("Setting cookies with:");
-// console.log("- Access Token length:", accessToken.length);
-// console.log("- Refresh Token length:", refreshToken.length);
+console.log("- Access Token length:", accessToken.length);
+console.log("- Refresh Token length:", refreshToken.length);
 // console.log("- NODE_ENV:", process.env.NODE_ENV);
 const isProduction = process.env.NODE_ENV === "production";
     // Set cookies
@@ -316,22 +224,19 @@ const isProduction = process.env.NODE_ENV === "production";
     // Access Token cookie
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: parseDuration(process.env.ACCESS_TOKEN_EXPIRY) || DEFAULT_COOKIE_DURATIONS.ACCESS_TOKEN,
       path: '/',
-
     });
-
 
     // Refresh Token in secure cookie (httpOnly)
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: "/", // Only sent to refresh token endpoint
-      
+      maxAge: parseDuration(process.env.REFRESH_TOKEN_EXPIRY) || DEFAULT_COOKIE_DURATIONS.REFRESH_TOKEN,
+      path: "/",
     });
     // console.log("Response headers after setting cookies:", res.getHeaders());
     // Update last login

@@ -18,9 +18,11 @@ const {
   RolePermission,
 } = require("../models");
 const crypto = require("crypto");
+const { parseDuration, DEFAULT_COOKIE_DURATIONS } = require("../utils/parseDuration");
 
 const generateRefreshToken = () => {
-  return crypto.randomBytes(64).toString("hex");
+  const length = parseInt(process.env.REFRESH_TOKEN_LENGTH) || 32;
+  return crypto.randomBytes(length).toString("hex");
 };
 const jwt = require("jsonwebtoken");
 
@@ -42,7 +44,7 @@ const refreshAccessToken = async (req, res) => {
     if (!storedToken || new Date(storedToken.expires_at) < new Date()) {
       // Clear invalid cookies
       res.clearCookie("accessToken", { path: "/" });
-      res.clearCookie("refreshToken", { path: "/api/refresh-token" });
+      res.clearCookie("refreshToken", { path: "/" });
       return res.status(403).json({ message: "Invalid refresh token" });
     }
 
@@ -182,7 +184,7 @@ const refreshAccessToken = async (req, res) => {
 
     const newRefreshToken = generateRefreshToken();
     const newExpiry = new Date();
-    newExpiry.setDate(newExpiry.getDate() + 7);
+    newExpiry.setTime(newExpiry.getTime() + (parseDuration(process.env.REFRESH_TOKEN_EXPIRY) || DEFAULT_COOKIE_DURATIONS.REFRESH_TOKEN));
 
     await RefreshToken.create({
       refresh_token: newRefreshToken,
@@ -195,14 +197,16 @@ res.cookie("accessToken", newAccessToken, {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "Lax",
-  path: "/",        // 🔥 REQUIRED
+  maxAge: parseDuration(process.env.ACCESS_TOKEN_EXPIRY) || DEFAULT_COOKIE_DURATIONS.ACCESS_TOKEN,
+  path: "/",
 });
 
 res.cookie("refreshToken", newRefreshToken, {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "Lax",
-  path: "/api/refresh-token",        // 🔥 REQUIRED
+  maxAge: parseDuration(process.env.REFRESH_TOKEN_EXPIRY) || DEFAULT_COOKIE_DURATIONS.REFRESH_TOKEN,
+  path: "/",
 });
 
     return res.status(200).json({
