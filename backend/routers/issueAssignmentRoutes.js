@@ -10,7 +10,7 @@ const {
   validateRemoveAssignment,
   validateRemoveAssignmentByAssignee,
 } = require("../validators/issueAssignmentValidator");
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken,checkPermission } = require("../middlewares/authMiddleware");
 
 /**
  * @swagger
@@ -113,7 +113,7 @@ const { authenticateToken } = require("../middlewares/authMiddleware");
  *       500:
  *         description: Internal Server Error
  */
-router.post("/", authenticateToken, validateAssignIssue, controller.assignIssue);
+router.post("/", authenticateToken, validateAssignIssue,checkPermission('request','read'), controller.assignIssue);
 /**
  * @swagger
  * /api/assignments/issue/{issue_id}/assignee/{assignee_id}:
@@ -151,6 +151,7 @@ router.delete(
   "/issue/:issue_id/assignee/:assignee_id",
   authenticateToken,
   validateRemoveAssignmentByAssignee,
+  checkPermission('request','read'),
   controller.removeAssignmentByAssigneeAndIssue
 );
 /**

@@ -91,6 +91,12 @@ export default function IssueList() {
 
   const { data: loggedUser, isLoading: userLoading } = useGetCurrentUserQuery();
 
+  // Extract userId safely (same pattern as AddIssue)
+  const userId =
+    loggedUser?.user?.user_id ||
+    loggedUser?.user_id ||
+    loggedUser?.data?.user_id;
+
   const actions: ActionButton[] = [
     {
       label: "Create Support Request",
@@ -121,17 +127,16 @@ export default function IssueList() {
     },
   ];
 
-  // Use the query with pagination and search
   const { isLoading, isError, data } = useGetIssuesByUserIdQuery(
     {
-      id: loggedUser?.user?.user_id ?? "",
+      id: userId ?? "",
       search: searchQuery,
       page: pageDetail.pageIndex + 1,
       pageSize: pageDetail.pageSize,
     },
     {
-      skip: !loggedUser?.user?.user_id,
-    }
+      skip: !userId, // ✅ skip only if userId truly doesn't exist
+    },
   );
 
   useEffect(() => {

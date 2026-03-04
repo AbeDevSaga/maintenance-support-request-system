@@ -3,7 +3,7 @@ const router = express.Router();
 const controller = require("../controllers/Issue/issueReRaiseController");
 
 const { validateReRaiseIssue } = require("../validators/issueReRaiseValidator");
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken ,checkPermission} = require("../middlewares/authMiddleware");
 
 /**
  * @swagger
@@ -80,7 +80,7 @@ const { authenticateToken } = require("../middlewares/authMiddleware");
  *       500:
  *         description: Internal Server Error
  */
-router.post("/", authenticateToken, validateReRaiseIssue, controller.reRaiseIssue);
+router.post("/", authenticateToken, validateReRaiseIssue,checkPermission('request','re_raise'), controller.reRaiseIssue);
 
 /**
  * @swagger
@@ -101,7 +101,7 @@ router.post("/", authenticateToken, validateReRaiseIssue, controller.reRaiseIssu
  *       500:
  *         description: Internal Error
  */
-router.get("/issue/:issue_id", authenticateToken, controller.getReRaisesByIssueId);
+router.get("/issue/:issue_id", authenticateToken,checkPermission('request','read'), controller.getReRaisesByIssueId);
 
 /**
  * @swagger
@@ -124,7 +124,7 @@ router.get("/issue/:issue_id", authenticateToken, controller.getReRaisesByIssueI
  *       500:
  *         description: Internal Error
  */
-router.get("/id/:re_raise_id", authenticateToken, controller.getReRaiseById);
+router.get("/id/:re_raise_id", authenticateToken, checkPermission('request','read'),controller.getReRaiseById);
 
 /**
  * @swagger
@@ -147,7 +147,7 @@ router.get("/id/:re_raise_id", authenticateToken, controller.getReRaiseById);
  *       500:
  *         description: Internal Error
  */
-router.get("/latest/:issue_id", authenticateToken, controller.getLatestReRaiseByIssueId);
+router.get("/latest/:issue_id", authenticateToken,checkPermission('request','read'), controller.getLatestReRaiseByIssueId);
 
 /**
  * @swagger
@@ -170,6 +170,6 @@ router.get("/latest/:issue_id", authenticateToken, controller.getLatestReRaiseBy
  *       500:
  *         description: Internal Error
  */
-router.delete("/id/:re_raise_id", authenticateToken, controller.deleteReRaise);
+router.delete("/id/:re_raise_id", authenticateToken,checkPermission('request','re_raise'), controller.deleteReRaise);
 
 module.exports = router;

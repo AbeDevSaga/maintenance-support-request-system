@@ -35,6 +35,7 @@ export default function Login() {
     try {
       clearError(); // Clear any previous errors
       const response = await login(data); // Use AuthContext login
+      console.log("here response displayed", response);
 
       if (!response) return;
       console.log("Login response:", response);

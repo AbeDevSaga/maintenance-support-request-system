@@ -3,11 +3,39 @@ export const getHeirarchyStructure = (projectId: string, object: any) => {
     return null;
   }
 
+  // Find the current user's project role
   const matchingProject = object.project_roles.find(
     (projectRole: any) => projectRole.project?.project_id === projectId
   );
 
-  return matchingProject?.hierarchy_node || null;
+  const currentNode = matchingProject?.hierarchy_node || null;
+  
+  if (!currentNode) return null;
+  
+  console.log("Current node from role:", currentNode);
+  
+  // Find parent by looking for a node with level one less than current node
+  // AND that belongs to the same project
+  let parentNode = null;
+  
+  if (currentNode.level && currentNode.level > 1) {
+    parentNode = object.project_roles
+      .map((role: any) => role.hierarchy_node)
+      .find((node: any) => 
+        node?.level === currentNode.level - 1 && 
+        node?.hierarchy_node_id !== currentNode.hierarchy_node_id
+      );
+  }
+  
+  console.log("Found parent node:", parentNode);
+  
+  // Return both current node and parent
+  return {
+    ...currentNode,
+    parent: parentNode || null,
+    // For root nodes (level 1), parent_id is null
+    parent_id: parentNode?.hierarchy_node_id || null
+  };
 };
 
 export const isLeafNode = (nodeId: string, allNodes: any[]): boolean => {

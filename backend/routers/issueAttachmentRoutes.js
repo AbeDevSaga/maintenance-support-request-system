@@ -5,7 +5,7 @@ const {
   getAttachmentsForIssue,
   deleteIssueAttachment,
 } = require("../controllers/Issue/issueAttachmentController");
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken,checkPermission } = require("../middlewares/authMiddleware");
 
 /**
  * @swagger
@@ -63,7 +63,7 @@ const { authenticateToken } = require("../middlewares/authMiddleware");
  *       500:
  *         description: Server error
  */
-router.post("/", authenticateToken, linkAttachmentToIssue);
+router.post("/", authenticateToken,checkPermission('request','read'), linkAttachmentToIssue);
 
 /**
  * @swagger
@@ -123,7 +123,7 @@ router.post("/", authenticateToken, linkAttachmentToIssue);
  *       500:
  *         description: Server error
  */
-router.get("/:issue_id", authenticateToken, getAttachmentsForIssue);
+router.get("/:issue_id", authenticateToken,checkPermission('request','read'), getAttachmentsForIssue);
 
 /**
  * @swagger

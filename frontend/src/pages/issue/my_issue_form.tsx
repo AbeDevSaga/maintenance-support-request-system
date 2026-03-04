@@ -43,12 +43,34 @@ export default function AddIssue() {
   const editData = state?.issue;
 
   // 🔹 Fetch logged-in user
+  // In your AddIssue component, fix the user_id extraction:
   const { data: loggedUser, isLoading: userLoading } = useGetCurrentUserQuery();
 
-  // 🔹 Fetch projects assigned to this user
+  // Debug to see the actual structure
+  useEffect(() => {
+    if (loggedUser) {
+      console.log("🔍 AddIssue - loggedUser structure:", loggedUser);
+      // Try different paths to find user_id
+      const possibleIds = {
+        direct: loggedUser?.user_id,
+        nested: loggedUser?.user?.user_id,
+        data: loggedUser?.data?.user_id,
+        user: loggedUser?.user,
+      };
+      console.log("🔍 Possible user_id paths:", possibleIds);
+    }
+  }, [loggedUser]);
+
+  // Get user_id with fallbacks
+  const userId =
+    loggedUser?.user?.user_id ||
+    loggedUser?.user_id ||
+    loggedUser?.data?.user_id;
+
+  // Then use it in the query
   const { data: userProjectsResponse, isLoading: projectsLoading } =
-    useGetProjectsByUserIdQuery(loggedUser?.user?.user_id ?? "", {
-      skip: !loggedUser?.user?.user_id,
+    useGetProjectsByUserIdQuery(userId ?? "", {
+      skip: !userId,
       refetchOnMountOrArgChange: true,
     });
 
@@ -187,7 +209,7 @@ export default function AddIssue() {
       url_path: data.url_path,
       action_taken: data.action_taken_checkbox ? data.action_taken : undefined,
       attachment_ids: data.attachment_id || [],
-      reported_by: loggedUser?.user?.user_id ?? "",
+      reported_by: userId ?? "",
     };
 
     try {

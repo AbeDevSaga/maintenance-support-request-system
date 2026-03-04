@@ -39,6 +39,7 @@ import { toast } from "sonner";
 import { formatStatus } from "../../utils/statusFormatter";
 import DetailHeader from "../../components/common/DetailHeader";
 import { useBreadcrumbTitleEffect } from "../../hooks/useBreadcrumbTitleEffect";
+import { Console } from "node:console";
 
 export default function UserTaskDetail() {
   const { id } = useParams<{ id: string }>();
@@ -69,16 +70,32 @@ export default function UserTaskDetail() {
   const [expandedRejects, setExpandedRejects] = useState<string[]>([]);
   const [expandedReRaises, setExpandedReRaises] = useState<string[]>([]);
   const { data: loggedUser, isLoading: userLoading } = useGetCurrentUserQuery();
-  const userId = loggedUser?.user?.user_id || "";
+
+  const userId =
+    loggedUser?.user?.user_id ||
+    loggedUser?.user_id ||
+    loggedUser?.data?.user_id;
 
   useEffect(() => {
-    if (loggedUser?.user?.project_roles && issue?.project?.project_id) {
+    // Fix: Access project_roles directly from loggedUser, not loggedUser.user
+    console.log(
+      "is he authenticated?????????????????",
+      loggedUser?.project_roles, // Changed from loggedUser?.user?.project_roles
+      issue?.project?.project_id,
+    );
+
+    // Fix: Use loggedUser.project_roles instead of loggedUser.user.project_roles
+    if (loggedUser?.project_roles && issue?.project?.project_id) {
       const hierarchy = getHeirarchyStructure(issue.project.project_id, {
-        project_roles: loggedUser.user.project_roles,
+        project_roles: loggedUser.project_roles, // Changed this line
       });
+      console.log(
+        "hierarchyhierarchyhierarchyhierarchyhierarchyhierarchy",
+        hierarchy,
+      );
       setHierarchyStructure(hierarchy);
     }
-  }, [loggedUser?.user?.project_roles, issue?.project?.project_id]);
+  }, [loggedUser?.project_roles, issue?.project?.project_id]);
 
   useEffect(() => {
     setEscalateIssue(canEscalate(userId, issue?.status, issue));
@@ -116,7 +133,44 @@ export default function UserTaskDetail() {
         return <FileText className="w-5 h-5 text-gray-500" />;
     }
   };
+  // In UserTaskDetail.tsx - complete solution
 
+  // In UserTaskDetail.tsx
+
+  useEffect(() => {
+    console.log(
+      "is he authenticated?????????????????",
+      loggedUser?.project_roles,
+      issue?.project?.project_id,
+    );
+
+    if (loggedUser?.project_roles && issue?.project?.project_id) {
+      const hierarchy = getHeirarchyStructure(issue.project.project_id, {
+        project_roles: loggedUser.project_roles,
+      });
+      console.log(
+        "hierarchyhierarchyhierarchyhierarchyhierarchyhierarchy",
+        hierarchy,
+      );
+      setHierarchyStructure(hierarchy);
+    }
+  }, [loggedUser?.project_roles, issue?.project?.project_id]);
+
+  // Get the hierarchy node from the structure we just set
+  const userHierarchyNode = hierarchyStructure;
+  console.log("uuuuuuuuuuuuuuuuuuuuuuuuuuuuuu", userHierarchyNode);
+
+  // Get the node names for display
+  const fromNodeName = userHierarchyNode?.name;
+  console.log("frommmmmmmmmmmmmmmmmmmmmm", fromNodeName);
+
+  // Now we can access parent directly from hierarchyStructure
+  const toNodeName = userHierarchyNode?.parent?.name || "EAII";
+  console.log("toooooooooooooooooooooooooooooooooo", toNodeName);
+
+  // The to_tier should be the parent's ID if it exists
+  const toTierId = userHierarchyNode?.parent_id || null;
+  console.log("toooooooooooooooooooooooooooooooooo", toTierId);
   // File card component for consistent styling
   const FileCard = ({ file, onOpen }: { file: any; onOpen: () => void }) => (
     <div
@@ -1362,10 +1416,12 @@ export default function UserTaskDetail() {
             {selectedAction === "escalate" && (
               <EscalationPreview
                 issue_id={id || ""}
-                from_tier={hierarchyStructure?.hierarchy_node_id || ""}
-                to_tier={hierarchyStructure?.parent_id || ""}
-                onClose={() => setSelectedAction("")}
+                from_tier={userHierarchyNode?.hierarchy_node_id}
+                from_tier_name={fromNodeName} // Pass the name
+                to_tier={toTierId} // This will be Central Admin's ID for Branch One
+                to_tier_name={toNodeName} // Pass the target name
                 escalated_by={userId}
+                onClose={() => setSelectedAction("")}
               />
             )}{" "}
             {openTimeline && (

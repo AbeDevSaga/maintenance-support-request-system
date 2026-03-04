@@ -65,7 +65,8 @@ export default function InternalTaskDetail() {
   const [userNode, setUserNode] = useState<any>(null);
 
   const { data: loggedUser, isLoading: userLoading } = useGetCurrentUserQuery();
-  const userId = loggedUser?.user?.user_id || "";
+  const userId = loggedUser?.user_id;
+  console.log("user idsssssssss", userId);
 
   // Get user's project assignments
   const {
@@ -81,7 +82,7 @@ export default function InternalTaskDetail() {
     useGetInternalNodesQuery({
       search: "",
       page: 1,
-      pageSize: 1000, // Get all nodes
+      pageSize: 100, // Get all nodes
     });
 
   const allNodes = useMemo(() => {
@@ -507,9 +508,9 @@ export default function InternalTaskDetail() {
                     <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                       <p className="text-sm text-yellow-700">
                         <span className="font-medium">Note:</span> As you are at
-                        the final level of the workflow, you cannot assign or
-                        transfer this request. Your options are to mark it in
-                        progress or resolve it once completed.
+                        the final level of the workflow, you cannot assign this
+                        request. Your options are to accept it or resolve it
+                        once completed.
                       </p>
                     </div>
                   )}

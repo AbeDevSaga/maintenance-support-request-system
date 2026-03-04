@@ -2,10 +2,22 @@ const jwt = require("jsonwebtoken");
 const db = require("../models");
 
 const authenticateToken = async (req, res, next) => {
+  // First try to get token from cookie
+    // Debug logging
+  // console.log('=== AUTH MIDDLEWARE ===');
+  // console.log('Cookies received:', req.cookies);
+  // console.log('Cookie header:', req.headers.cookie);
+  let token = req.cookies.accessToken;
+  //  console.log('Token from cookie:',token, token ? '✅ Present' : '❌ Missing');
+  // Fallback to Authorization header for backward compatibility
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // Bearer <token>
+  if (!token && authHeader) {
+    token = authHeader.split(" ")[1];
+    console.log('Token from header:', token ? '✅ Present' : '❌ Missing');
+  }
 
   if (!token) {
+    console.log('❌ No token found - returning 401');
     return res.status(401).json({
       success: false,
       message: "Access token required",
@@ -14,7 +26,7 @@ const authenticateToken = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
+//  console.log('✅ Token verified for user:', decoded.user_id);
     // Fetch user with roles and permissions
     const user = await db.User.findByPk(decoded.user_id, {
       attributes: {
@@ -91,11 +103,14 @@ const authenticateToken = async (req, res, next) => {
     });
 
     if (!user || !user.is_active) {
+      console.log('❌ User not found or inactive');
       return res.status(403).json({
         success: false,
         message: "User not found or inactive",
       });
     }
+
+    console.log('✅ User found:', user.email);
 
     // Password change enforcement paths
     const publicPaths = [
@@ -193,10 +208,14 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Remove duplicate permissions
-    const uniquePermissions = Array.from(
-      new Map(permissions.map(p => [`${p.resource}:${p.action}`, p])).values()
-    );
+const uniquePermissions = Array.from(
+  new Map(permissions.map(p => [`${p.resource}:${p.action}`, p])).values()
+);
+
+// Convert to string format for consistency
+const permissionStrings = uniquePermissions.map(p => 
+  `${p.resource}:${p.action}`.toLowerCase()
+);
 
     // Add password change status to req.user
     req.user = {
@@ -207,14 +226,14 @@ const authenticateToken = async (req, res, next) => {
       user_type_id: user.user_type_id,
       user_type: user.userType?.name,
       roles: Array.from(roles),
-      permissions: uniquePermissions, // ✅ Consistent field name with object format
+        permissions: permissionStrings,
       project_roles: user.projectRoles ? user.projectRoles.map((pr) => ({
         project_id: pr.project_id,
         project_name: pr.project?.name,
-        role_id: pr.role_id,
+        // role_id: pr.role_id,
         role_name: pr.role?.name,
-        sub_role_id: pr.sub_role_id,
-        sub_role_name: pr.subRole?.name,
+        // sub_role_id: pr.sub_role_id,
+        // sub_role_name: pr.subRole?.name,
       })) : [],
       is_first_logged_in: user.is_first_logged_in,
       password_changed_at: user.password_changed_at,
@@ -224,6 +243,14 @@ const authenticateToken = async (req, res, next) => {
     next();
   } catch (error) {
     console.error("Auth middleware error:", error);
+        // If token is expired, we could handle refresh token here
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        success: false,
+        message: "Access token expired",
+        code: "TOKEN_EXPIRED"
+      });
+    }
     return res.status(403).json({
       success: false,
       message: "Invalid or expired token",
@@ -233,24 +260,64 @@ const authenticateToken = async (req, res, next) => {
 
 const checkPermission = (resource, action) => {
   return (req, res, next) => {
+    // console.log('\n🔐 ========== PERMISSION CHECK ==========');
+    // console.log(`📍 Route: ${req.method} ${req.originalUrl}`);
+    // console.log(`📍 Required Permission: ${resource}:${action}`);
+    
     // No user or permissions found
-    if (!req.user || !req.user.permissions) {
-      console.warn(`Unauthorized access attempt - No permissions found: ${req.originalUrl}`, {
-        ip: req.ip,
-        user: req.user?.user_id,
-        url: req.originalUrl
-      });
-
+    if (!req.user) {
+      // console.log('❌ No user found in request');
+      // console.log('🔚 ======================================\n');
       return res.status(403).json({
         success: false,
-        message: "Access denied: No permissions found",
-        code: "NO_PERMISSIONS",
-        redirectTo: "/unauthorized"
+        message: "Access denied: No user found",
+        code: "NO_USER"
       });
     }
 
-    // Check if permissions array exists and has items
-    if (!Array.isArray(req.user.permissions) || req.user.permissions.length === 0) {
+    // console.log(`👤 User ID: ${req.user.user_id}`);
+    // console.log(`👤 User Email: ${req.user.email}`);
+    // console.log(`👤 User Type: ${req.user.user_type}`);
+
+    if (!req.user.permissions) {
+      // console.log('❌ No permissions array in user object');
+      // console.log('📦 User object keys:', Object.keys(req.user));
+      // console.log('🔚 ======================================\n');
+      return res.status(403).json({
+        success: false,
+        message: "Access denied: No permissions found",
+        code: "NO_PERMISSIONS"
+      });
+    }
+
+    // Check if permissions array exists
+    if (!Array.isArray(req.user.permissions)) {
+      // console.log('❌ Permissions is not an array');
+      // console.log('📦 Permissions type:', typeof req.user.permissions);
+      // console.log('🔚 ======================================\n');
+      return res.status(403).json({
+        success: false,
+        message: "Access denied: Invalid permissions format",
+        code: "INVALID_PERMISSIONS"
+      });
+    }
+
+    // console.log(`📋 User Permissions (${req.user.permissions.length} total):`);
+    
+    // Log all permissions with their types
+    // req.user.permissions.forEach((perm, index) => {
+    //   if (typeof perm === 'string') {
+    //     console.log(`   ${index + 1}. [STRING] "${perm}"`);
+    //   } else if (perm && typeof perm === 'object') {
+    //     console.log(`   ${index + 1}. [OBJECT] resource: "${perm.resource}", action: "${perm.action}" -> string: "${perm.resource}:${perm.action}"`);
+    //   } else {
+    //     console.log(`   ${index + 1}. [UNKNOWN]`, perm);
+    //   }
+    // });
+
+    if (req.user.permissions.length === 0) {
+      // console.log('⚠️ Permissions array is empty');
+      // console.log('🔚 ======================================\n');
       return res.status(403).json({
         success: false,
         message: "Access denied: No permissions assigned",
@@ -258,34 +325,82 @@ const checkPermission = (resource, action) => {
       });
     }
 
-    // Check permission in object format { resource, action }
+    // Normalize the required permission to string format
+    const requiredPermission = `${resource}:${action}`.toLowerCase();
+    // console.log(`\n🔍 Checking for required permission: "${requiredPermission}"`);
+    
+    // Check permission - handle both string and object formats
+    let foundMatch = false;
+    let matchDetails = [];
+    
     const hasPermission = req.user.permissions.some(perm => {
-      // Handle object format
-      if (perm && typeof perm === 'object') {
-        return perm.resource === resource && perm.action === action;
-      }
-      // Handle string format (fallback)
+      // If permission is a string (e.g., "users:read")
       if (typeof perm === 'string') {
-        return perm === `${resource}:${action}`;
+        const match = perm.toLowerCase() === requiredPermission;
+        matchDetails.push({
+          type: 'string',
+          value: perm,
+          normalized: perm.toLowerCase(),
+          match
+        });
+        return match;
       }
+      
+      // If permission is an object (e.g., { resource: "users", action: "read" })
+      if (perm && typeof perm === 'object') {
+        const permString = `${perm.resource}:${perm.action}`.toLowerCase();
+        const match = permString === requiredPermission;
+        matchDetails.push({
+          type: 'object',
+          resource: perm.resource,
+          action: perm.action,
+          asString: permString,
+          match
+        });
+        return match;
+      }
+      
+      matchDetails.push({
+        type: 'unknown',
+        value: perm,
+        match: false
+      });
       return false;
     });
 
+    // Log detailed matching results
+    // console.log('\n📊 Permission Matching Results:');
+    matchDetails.forEach((detail, index) => {
+      if (detail.type === 'string') {
+        console.log(`   ${index + 1}. String "${detail.value}" -> "${detail.normalized}" ${detail.match ? '✅ MATCH' : '❌ no match'}`);
+      } else if (detail.type === 'object') {
+        console.log(`   ${index + 1}. Object ${detail.resource}:${detail.action} -> "${detail.asString}" ${detail.match ? '✅ MATCH' : '❌ no match'}`);
+      } else {
+        console.log(`   ${index + 1}. Unknown format:`, detail.value);
+      }
+    });
+
     if (!hasPermission) {
-      console.warn(`Permission denied: User ${req.user?.user_id} attempted to access ${req.originalUrl}`, {
-        requiredPermission: `${resource}:${action}`,
-        userPermissions: req.user.permissions,
-        ip: req.ip
-      });
+      // console.log(`\n❌ PERMISSION DENIED for user ${req.user.user_id}`);
+      // console.log(`   Required: "${requiredPermission}"`);
+      // console.log(`   User has ${req.user.permissions.length} permissions but none match`);
+      // console.log('🔚 ======================================\n');
 
       return res.status(403).json({
         success: false,
         message: `Access denied: Required permission ${resource}:${action}`,
         code: "PERMISSION_DENIED",
-        redirectTo: "/unauthorized"
+        debug: {
+          required: requiredPermission,
+          userPermissions: req.user.permissions,
+          userId: req.user.user_id
+        }
       });
     }
 
+    // console.log(`\n✅ PERMISSION GRANTED for ${resource}:${action}`);
+    // console.log('🔚 ======================================\n');
+    
     // User has permission, proceed
     next();
   };

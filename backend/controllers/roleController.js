@@ -17,7 +17,10 @@ const createRole = async (req, res) => {
   try {
     const { name, description, sub_roles, role_type, permission_ids } =
       req.body;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     // ====== Validate role_type ======
     const allowedRoleTypes = ["internal", "external"];
     let finalRoleType = "internal"; // default
@@ -239,7 +242,10 @@ const getRoles = async (req, res) => {
       page = 1,
       pageSize = 10,
     } = req.query; // expecting query params
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     // Build dynamic where clause
     const whereClause = {};
     if (role_type) whereClause.role_type = role_type;
@@ -321,6 +327,11 @@ const getRoles = async (req, res) => {
 const getRoleById = async (req, res) => {
   try {
     const { id } = req.params;
+    
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
 
     const role = await Role.findOne({
       where: {
@@ -394,7 +405,10 @@ const updateRole = async (req, res) => {
     const { id } = req.params;
     const { name, description, sub_roles, permission_ids, role_type } =
       req.body;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     // Find the role
     const role = await Role.findOne({
       where: { role_id: id, is_active: true },
@@ -607,7 +621,10 @@ const deleteRole = async (req, res) => {
   const t = await Role.sequelize.transaction();
   try {
     const { id } = req.params;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     // Find the role
     const role = await Role.findOne({
       where: {
@@ -687,7 +704,10 @@ const deleteRole = async (req, res) => {
 const getSubRolesByRole = async (req, res) => {
   try {
     const { id } = req.params;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     const role = await Role.findOne({
       where: {
         role_id: id,
@@ -737,7 +757,10 @@ const getSubRolesByRole = async (req, res) => {
 const getPermissionsByRoleSubRole = async (req, res) => {
   try {
     const { roleId, subRoleId } = req.params;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     const roleSubRole = await RoleSubRole.findOne({
       where: {
         role_id: roleId,

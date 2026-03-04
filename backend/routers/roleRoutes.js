@@ -18,7 +18,7 @@ const {
 
 // Role CRUD routes
 router.post('/',authenticateToken,validateCreateRole, checkPermission('roles', 'create'),createRole);
-router.get('/',authenticateToken, checkPermission('roles', 'read'),  getRoles);
+router.get('/',authenticateToken,  getRoles);
 router.get('/:id',authenticateToken, checkPermission('roles', 'read'),getRoleById);
 router.put("/:id", authenticateToken, validateUpdateRole ,checkPermission('roles', 'update'),updateRole);
 router.delete('/:id',authenticateToken, checkPermission('roles', 'delete'),deleteRole);

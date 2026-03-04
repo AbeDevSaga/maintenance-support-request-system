@@ -78,13 +78,24 @@ const allowedOrigins = [
 
 const corsOptions = {
   origin: (origin, callback) => {
+    const allowedOrigins = [
+      "http://196.188.240.103:4037",
+      "http://localhost:4037",
+      "http://localhost:4000",
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+      process.env.FRONTEND_URL,
+    ].filter(Boolean); // Remove undefined values
+    
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.log('CORS blocked origin:', origin); // Add logging for debugging
       callback(new Error("Not allowed by CORS"));
     }
   },
-  credentials: true,
+  credentials: true, // This is CRITICAL for cookies
+  optionsSuccessStatus: 200 // Some browsers (like Chrome) need this
 };
 
 app.use(cors(corsOptions));
@@ -164,13 +175,13 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // ================== API Routes go here ==================
 
 app.use("/api/dashboard", dashboardRoute);
-app.use("/api/users", userRoute);
+
 app.use("/api/roles", roleRoute);
 app.use("/api/role-permission", rolePermissionRoute);
 app.use("/api/user-roles", userRoleRoute);
 
 app.use("/api/auth", authRoute);
-
+app.use("/api/users", userRoute);
 app.use("/api/projects", require("./routers/projectRoutes"));
 app.use("/api/project-metrics", projectMetricRoute);
 app.use("/api/institutes", instituteRoute);

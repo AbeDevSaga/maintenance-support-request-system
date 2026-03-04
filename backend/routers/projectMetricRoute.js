@@ -41,7 +41,7 @@ router.post(
   createProjectMetric
 );
 
-router.get("/", authenticateToken,checkPermission('human_resources','read'), getProjectMetrics);
+router.get("/", authenticateToken, getProjectMetrics);
 
 router.get("/:id", authenticateToken, validateUUIDParam, checkPermission('human_resources','read'),getProjectMetricById);
 

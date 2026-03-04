@@ -39,17 +39,15 @@ const refreshAccessToken = async (req, res) => {
       },
     });
 
-    if (!storedToken) {
+    if (!storedToken || new Date(storedToken.expires_at) < new Date()) {
+      // Clear invalid cookies
+      res.clearCookie("accessToken", { path: "/" });
+      res.clearCookie("refreshToken", { path: "/api/refresh-token" });
       return res.status(403).json({ message: "Invalid refresh token" });
     }
 
-    if (new Date(storedToken.expires_at) < new Date()) {
-      return res.status(403).json({ message: "Refresh token expired" });
-    }
-
     // Revoke old token
-    storedToken.is_revoked = true;
-    await storedToken.save();
+    await storedToken.update({ is_revoked: true });
 
     // Get complete user data with all associations (same as in login)
     const user = await User.findOne({
@@ -98,7 +96,7 @@ const refreshAccessToken = async (req, res) => {
                 model: RolePermission,
                 attributes: ["is_active"],
               },
-              attributes: ["permission_id", "action", "resource"],
+              attributes: [ "action", "resource"],
               where: {
                 is_active: true,
               },
@@ -118,29 +116,21 @@ const refreshAccessToken = async (req, res) => {
       return res.status(403).json({ message: "User is inactive" });
     }
 
-    // Collect permissions (same logic as login)
-    const allPermissions = new Map();
-    const addRolePermissions = (role) => {
-      if (role && role.permissions) {
-        role.permissions.forEach((permission) => {
-          if (!allPermissions.has(permission.permission_id)) {
-            allPermissions.set(permission.permission_id, {
-              permission_id: permission.permission_id,
-              action: permission.action,
-              resource: permission.resource,
-            });
-          }
-        });
-      }
-    };
-
+    // Collect permissions
+    const permissions = [];
     if (user.roles) {
-      user.roles.forEach((role) => {
-        addRolePermissions(role);
+      user.roles.forEach(role => {
+        if (role.permissions) {
+          role.permissions.forEach(perm => {
+            permissions.push(`${perm.resource}:${perm.action}`);
+          });
+        }
       });
     }
 
-    const uniquePermissions = Array.from(allPermissions.values());
+
+
+    
 
     // Format user data for token (same as login)
     const userDataForToken = {
@@ -174,7 +164,7 @@ const refreshAccessToken = async (req, res) => {
             level: user.internalNode.level,
           }
         : null,
-      permissions: uniquePermissions,
+      permissions: [...new Set(permissions)],
       roles: user.roles
         ? user.roles.map((role) => ({
             role_id: role.role_id,
@@ -187,7 +177,7 @@ const refreshAccessToken = async (req, res) => {
     const newAccessToken = jwt.sign(
       userDataForToken, // Use full user data, not just user_id
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRATION_TIME || "15m" }
+      { expiresIn: process.env.JWT_EXPIRATION_TIME || "2m" }
     );
 
     const newRefreshToken = generateRefreshToken();
@@ -201,11 +191,19 @@ const refreshAccessToken = async (req, res) => {
       is_revoked: false,
     });
 
-    res.cookie("refreshToken", newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Use secure in production
-      sameSite: "Strict",
-    });
+res.cookie("accessToken", newAccessToken, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "Lax",
+  path: "/",        // 🔥 REQUIRED
+});
+
+res.cookie("refreshToken", newRefreshToken, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "Lax",
+  path: "/api/refresh-token",        // 🔥 REQUIRED
+});
 
     return res.status(200).json({
       accessToken: newAccessToken,

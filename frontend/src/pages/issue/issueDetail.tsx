@@ -61,8 +61,12 @@ export default function UserIssueDetail() {
     files: any[];
     index: number;
   } | null>(null);
-  const { data: loggedUser } = useGetCurrentUserQuery();
-  const userId = loggedUser?.user?.user_id || "";
+  const { data: loggedUser, isLoading: userLoading } = useGetCurrentUserQuery();
+
+  const userId =
+    loggedUser?.user?.user_id ||
+    loggedUser?.user_id ||
+    loggedUser?.data?.user_id;
 
   useEffect(() => {
     setConfirmIssue(canConfirm(userId, issue?.status, issue));

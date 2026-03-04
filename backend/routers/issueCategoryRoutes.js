@@ -175,7 +175,7 @@ const { authenticateToken,checkPermission } = require("../middlewares/authMiddle
  */
 
 router.post("/",  authenticateToken,checkPermission('request_categories','create'),controller.createCategory);
-router.get("/",authenticateToken, checkPermission('request_categories','read'),controller.getAllCategories);
+router.get("/",authenticateToken, controller.getAllCategories);
 router.get("/:id",authenticateToken,checkPermission('request_categories','read'), controller.getCategoryById);
 router.put("/:id", authenticateToken,checkPermission('request_categories','update'), controller.updateCategory);
 router.delete("/:id", authenticateToken,checkPermission('request_categories','delete'), controller.deleteCategory);

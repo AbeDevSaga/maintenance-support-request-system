@@ -175,7 +175,7 @@ const { authenticateToken,checkPermission} = require("../middlewares/authMiddlew
  */
 
 router.post("/", authenticateToken,checkPermission('request_priorities','create'), controller.createPriority);
-router.get("/", authenticateToken,checkPermission('request_priorities','read'), controller.getAllPriorities);
+router.get("/", authenticateToken, controller.getAllPriorities);
 router.get("/:id", authenticateToken, checkPermission('request_priorities','read'),controller.getPriorityById);
 router.put("/:id", authenticateToken,checkPermission('request_priorities','update'), controller.updatePriority);
 router.delete("/:id", authenticateToken,checkPermission('request_priorities','delete'), controller.deletePriority);

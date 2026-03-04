@@ -15,7 +15,7 @@ import { formatStatus } from "../../../utils/statusFormatter";
 
 const TaskTableColumns = [
   {
-    accessorKey: "project.ticket_number",
+    accessorKey: "ticket_number",
     header: "Ticket Number",
     cell: ({ row }: any) => <div>{row.original.ticket_number || "N/A"}</div>,
   },
@@ -91,19 +91,29 @@ const TaskTableColumns = [
 
 export default function InternalTaskList() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [pageDetail, setPageDetail] = useState({
+  const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageCount: 1,
     pageSize: 10,
+    total: 0,
   });
 
   const { data: loggedUser, isLoading: userLoading } = useGetCurrentUserQuery();
-  const userId = loggedUser?.user?.user_id || "";
-  const userInternalNode =
-    loggedUser?.user?.internal_project_roles?.[0]?.internal_node;
 
-  // CORRECTED: Use the hook which now accepts searchQuery from URL
-  // The hook will pass searchQuery to the API
+  const userId =
+    loggedUser?.user?.user_id ||
+    loggedUser?.user_id ||
+    loggedUser?.data?.user_id;
+
+  const internalRoles =
+    loggedUser?.user?.internal_project_roles ||
+    loggedUser?.internal_project_roles ||
+    loggedUser?.data?.internal_project_roles ||
+    [];
+
+  const userInternalNode = internalRoles?.[0]?.internal_node;
+
+  // Use the hook with pagination
   const {
     data: issuesData,
     isLoading: issuesLoading,
@@ -112,56 +122,86 @@ export default function InternalTaskList() {
   } = useIssuesQuery(
     userId,
     userInternalNode,
-    pageDetail.pageIndex + 1,
-    pageDetail.pageSize
+    pagination.pageIndex + 1,
+    pagination.pageSize,
   );
 
-  // Extract issues and pagination data
-  const allIssues = useMemo(() => {
+  // Debug logs to see the actual structure
+  useEffect(() => {
+    if (issuesData) {
+      console.log("🔍 issuesData received:", issuesData);
+      console.log("🔍 issuesData keys:", Object.keys(issuesData));
+      console.log("🔍 issuesData.data:", issuesData.data);
+      console.log("🔍 issuesData.meta:", issuesData.meta);
+    }
+  }, [issuesData]);
+
+  // Extract issues - handle different possible structures
+  const issues = useMemo(() => {
     if (!issuesData) return [];
 
-    // Check if it's the paginated response (has data property)
+    // If issuesData has a data property that's an array
     if (issuesData.data && Array.isArray(issuesData.data)) {
+      console.log("✅ Using issuesData.data, length:", issuesData.data.length);
       return issuesData.data;
     }
 
-    // Check if it's the non-paginated array
+    // If issuesData itself is an array
     if (Array.isArray(issuesData)) {
+      console.log("✅ Using issuesData as array, length:", issuesData.length);
       return issuesData;
     }
 
-    // Check if it has issues property (for escalated issues)
+    // If issuesData has an issues property
     if (issuesData.issues && Array.isArray(issuesData.issues)) {
+      console.log(
+        "✅ Using issuesData.issues, length:",
+        issuesData.issues.length,
+      );
       return issuesData.issues;
     }
 
+    console.log("❌ Could not extract issues from:", issuesData);
     return [];
   }, [issuesData]);
 
-  // Get pagination metadata
-
+  // Update pagination from response
   useEffect(() => {
     if (issuesData?.meta) {
-      setPageDetail((prev) => ({
+      console.log("📊 Updating pagination from meta:", issuesData.meta);
+      setPagination((prev) => ({
         ...prev,
-        pageCount: issuesData.meta.totalPages,
+        pageCount: issuesData.meta.totalPages || 1,
+        total: issuesData.meta.total || 0,
       }));
     }
-  }, [issuesData?.meta]);
+  }, [issuesData]);
 
   // Filter issues by status (client-side filtering)
   const filteredIssues = useMemo(() => {
-    return allIssues.filter((issue) => {
-      if (statusFilter === "all") return true;
-      return issue.status === statusFilter;
-    });
-  }, [allIssues, statusFilter]);
+    if (!issues.length) return [];
+
+    if (statusFilter === "all") return issues;
+
+    return issues.filter((issue) => issue.status === statusFilter);
+  }, [issues, statusFilter]);
 
   const handlePagination = (index: number, size: number) => {
-    setPageDetail({
-      ...pageDetail,
+    console.log("📄 Pagination change:", { index, size });
+    setPagination({
+      ...pagination,
       pageIndex: index,
       pageSize: size,
+    });
+  };
+
+  const handleStatusChange = (value: string | string[]) => {
+    const newStatus = Array.isArray(value) ? value[0] : value;
+    setStatusFilter(newStatus);
+    // Reset to first page when filter changes
+    setPagination({
+      ...pagination,
+      pageIndex: 0,
     });
   };
 
@@ -177,11 +217,7 @@ export default function InternalTaskList() {
         { label: "Closed", value: "closed" },
       ],
       value: statusFilter,
-      onChange: (value: string | string[]) => {
-        const newStatus = Array.isArray(value) ? value[0] : value;
-        setStatusFilter(newStatus);
-        setPageDetail({ ...pageDetail, pageIndex: 0 });
-      },
+      onChange: handleStatusChange,
     },
   ];
 
@@ -225,11 +261,13 @@ export default function InternalTaskList() {
         columns={TaskTableColumns}
         data={filteredIssues}
         handlePagination={handlePagination}
-        tablePageSize={pageDetail.pageSize}
-        totalPageCount={pageDetail.pageCount}
-        currentIndex={pageDetail.pageIndex}
+        tablePageSize={pagination.pageSize}
+        totalPageCount={pagination.pageCount}
+        currentIndex={pagination.pageIndex}
         isLoading={issuesLoading}
       />
+
+      {/* Debug info */}
     </PageLayout>
   );
 }

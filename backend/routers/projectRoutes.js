@@ -118,7 +118,7 @@ router.post(
  *               items:
  *                 $ref: '#/components/schemas/Project'
  */
-router.get("/", authenticateToken,   checkPermission('projects','read'),projectController.getProjects);
+router.get("/", authenticateToken, projectController.getProjects);
 
 /**
  * @swagger

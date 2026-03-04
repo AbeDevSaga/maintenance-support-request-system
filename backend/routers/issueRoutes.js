@@ -94,12 +94,13 @@ router.post(
  *         description: List of issues
  */
 router.get("/", authenticateToken, validateGetIssuesQuery, checkPermission('request','read'), issueController.getIssues);
-router.get("/assigned/:user_id", authenticateToken, issueController.getAssignedIssues);
+router.get("/assigned/:user_id", authenticateToken,checkPermission('request','read'), issueController.getAssignedIssues);
 
 router.get(
   "/user/:id",
    authenticateToken,
   validateIssueIdParam,
+  checkPermission('request','read'),
   issueController.getIssuesByUserId
 );
 

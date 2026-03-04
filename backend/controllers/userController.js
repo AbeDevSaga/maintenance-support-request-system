@@ -93,7 +93,10 @@ const createUser = async (req, res) => {
       phone_number,
       hierarchy_node_id,
     } = req.body;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     // ====== Check existing email ======
     const existingUser = await User.findOne({
       where: { email },
@@ -324,7 +327,10 @@ const updateUser = async (req, res) => {
       role_ids,
       project_metrics_ids,
     } = req.body;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     // ====== Find user ======
     const user = await User.findByPk(user_id, { transaction: t });
     console.log("user: ", user, "user_idL ", user_id, req.params);
@@ -503,7 +509,10 @@ const getUsers = async (req, res) => {
       page = 1,
       pageSize = 10,
     } = req.query;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     // ====== Build filters dynamically ======
     const whereClause = {};
 
@@ -585,7 +594,10 @@ const getUsers = async (req, res) => {
 const getUsersByInstituteId = async (req, res) => {
   try {
     const { institute_id } = req.params;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     if (!institute_id) {
       return res.status(400).json({
         success: false,
@@ -634,7 +646,10 @@ const getUsersByInstituteId = async (req, res) => {
 const getUsersAssignedToNode = async (req, res) => {
   try {
     const { project_id, hierarchy_node_id } = req.params;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     // Validate project
     const project = await Project.findByPk(project_id);
     if (!project) {
@@ -834,7 +849,10 @@ const getInternalUsersAssignedToNode = async (req, res) => {
       page = 1,
       pageSize = 10,
     } = req.query;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     // Validate project
     const project = await Project.findByPk(project_id);
     if (!project) {
@@ -970,7 +988,10 @@ const getInternalUsersAssignedToNode = async (req, res) => {
 const getUsersAssignedToProject = async (req, res) => {
   try {
     const { project_id } = req.params;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     if (!project_id) {
       return res.status(400).json({
         success: false,
@@ -1089,7 +1110,10 @@ const getUsersAssignedToProject = async (req, res) => {
 const getInternalUsersAssignedToProject = async (req, res) => {
   try {
     const { project_id } = req.params;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     // ====== Get search and pagination from query params ======
     const {
       search, // optional: for user name/email search
@@ -1240,7 +1264,10 @@ const getUsersNotAssignedToProject = async (req, res) => {
   // console.log("not external one assigned called");
   try {
     const { institute_id, project_id } = req.params;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     if (!institute_id) {
       return res.status(400).json({
         success: false,
@@ -1313,7 +1340,10 @@ const getInternalUsersNotAssignedToProject = async (req, res) => {
   console.log("not assigned called");
   try {
     const { project_id } = req.params;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     if (!project_id) {
       return res.status(400).json({
         success: false,
@@ -1375,7 +1405,10 @@ const getInternalUsersNotAssignedToProject = async (req, res) => {
 const getProjectSubNodeUsers = async (req, res) => {
   try {
     const { project_id, Internal_node_id } = req.params;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     if (!project_id || !Internal_node_id) {
       return res.status(400).json({
         success: false,
@@ -1437,7 +1470,10 @@ const getProjectSubNodeUsers = async (req, res) => {
 const getUserById = async (req, res) => {
   try {
     const { id: user_id } = req.params;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     console.log("user_id: ", user_id);
 
     // ====== Find user with relations ======
@@ -1534,7 +1570,10 @@ const deleteUser = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const { id } = req.params;
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     if (!isUuid(id)) {
       await t.rollback();
       return res.status(400).json({
@@ -1577,7 +1616,10 @@ const toggleUserActiveStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { is_active } = req.body; // expect boolean true/false
-
+const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
     if (!isUuid(id)) {
       await t.rollback();
       return res.status(400).json({
@@ -1682,7 +1724,10 @@ const resetUserPassword = async (req, res) => {
 
 const getProfile = async (req, res) => {
   try {
-    const userId = req.user.user_id;
+  const userId = req.user?.user_id;
+if(!userId){
+  return res.status(201).json({message:"An authorized"})
+}
 
     const user = await User.findOne({
       where: { user_id: userId },
