@@ -157,14 +157,10 @@ export const issueApi = baseApi.injectEndpoints({
     // }),
 
     // ⭐ NEW — Get issues assigned via IssueAssignment
-getAssignedIssues: builder.query<PaginatedResponse<Issue>, { user_id: string; page?: number; pageSize?: number; search?: string }>({
-  query: ({ user_id, page = 1, pageSize = 10, search }) => {
-    const params = new URLSearchParams({ page: page.toString(), pageSize: pageSize.toString() });
-    if (search) params.append("search", search);
-    return `/issues/assigned/${user_id}?${params.toString()}`;
-  },
-  providesTags: ["Issue"],
-}),
+    getAssignedIssues: builder.query<Issue[], string>({
+      query: (user_id) => `/issues/assigned/${user_id}`,
+      providesTags: ["Issue"],
+    }),
 
     getIssuesByHierarchyAndProject: builder.query<
       Issue[],

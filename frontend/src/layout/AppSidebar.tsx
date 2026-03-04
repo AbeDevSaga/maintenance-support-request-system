@@ -271,14 +271,15 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
+      key={user?.user_id || "no-user"} // Add this key to force re-render
       className={`fixed mt-5 flex flex-col top-0 px-5 left-0 bg-white dark:bg-gray-900 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 dark:border-gray-800 rounded-r-2xl
-        ${
-          isExpanded || isMobileOpen || isHovered
-            ? "w-[290px] lg:w-[290px] 3xl:w-[340px]"
-            : "w-[90px]"
-        }
-        ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0`}
+      ${
+        isExpanded || isMobileOpen || isHovered
+          ? "w-[290px] lg:w-[290px] 3xl:w-[340px]"
+          : "w-[90px]"
+      }
+      ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
+      lg:translate-x-0`}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

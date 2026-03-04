@@ -38,7 +38,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   const [logoutMutation] = useLogoutMutation();
 
   // Function to check session
-  // Function to check session
   const checkSession = async (): Promise<{
     success: boolean;
     requiresPasswordChange?: boolean;
@@ -126,21 +125,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   }, []);
 
   // LOGIN
-  // LOGIN
   const login = useCallback(
     async (credentials: LoginCredentials) => {
       try {
         setLoading(true);
         setError(null);
 
+        // Clear any stale user data before login
+        setUser(null);
+
         const response = await loginMutation(credentials).unwrap();
 
         if (response.user) {
-          setUser(response.user);
-          return response;
+          // Force a fresh session check to ensure we have the latest data
+          const sessionStatus = await checkSession();
+
+          if (sessionStatus.success) {
+            return {
+              ...response,
+              requiresPasswordChange: sessionStatus.requiresPasswordChange,
+            };
+          }
         }
 
-        throw new Error("No user returned");
+        return response;
       } catch (err: any) {
         const message = err.data?.message || "Login failed";
         setError(message);
@@ -151,17 +159,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     },
     [loginMutation],
   );
+
   // LOGOUT
   const logout = useCallback(async (): Promise<void> => {
     try {
       console.log("🚪 Logging out...");
       await logoutMutation().unwrap();
-      setUser(null);
 
-      // Clear any local state
+      // Clear ALL state immediately
+      setUser(null);
+      setError(null);
+      setInitialized(false);
+      initRef.current = false;
+
+      // Force a hard reload to clear all React state and caches
       window.location.href = "/login";
     } catch (err) {
       console.error("Logout error:", err);
+      // Still clear state and redirect even if API call fails
       setUser(null);
       window.location.href = "/login";
     }
@@ -234,11 +249,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
     const perms = user.permissions
       .map((p) => {
-        // If it's a string like "dashboard:view_all"
         if (typeof p === "string") {
           return p.toUpperCase();
         }
-        // If it's an object like { resource: "dashboard", action: "view_all" }
         if (p.resource && p.action) {
           return `${p.resource}:${p.action}`.toUpperCase();
         }
@@ -249,7 +262,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     return new Set(perms);
   }, [user?.permissions]);
 
-  // Update hasPermission to work with both formats
   const hasPermission = useCallback(
     (permission: string): boolean => {
       if (!user) return false;
@@ -258,7 +270,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     [user, userPermissionsSet],
   );
 
-  // Update hasAnyPermission
   const hasAnyPermission = useCallback(
     (permissions: string[]): boolean => {
       if (!user) return false;
@@ -269,15 +280,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
 
   const hasAllPermissions = useCallback(
     (permissions: string[]): boolean => {
-      if (!user?.permissions || permissions.length === 0) return false;
-
-      const userPermsSet = new Set(
-        user.permissions.map((p) => p.toUpperCase()),
-      );
-
-      return permissions.every((p) => userPermsSet.has(p.toUpperCase()));
+      if (!user) return false;
+      return permissions.every((p) => userPermissionsSet.has(p.toUpperCase()));
     },
-    [user],
+    [user, userPermissionsSet],
   );
 
   const hasRole = useCallback(

@@ -604,47 +604,28 @@ const getIssuesByUserId = async (req, res) => {
 // ============================================
 const getAssignedIssues = async (req, res) => {
   try {
+      const authUserId = req.user?.user_id; 
     const { user_id } = req.params;
-    let { page = 1, pageSize = 10, search } = req.query;
 
-    page = parseInt(page);
-    pageSize = parseInt(pageSize);
-    console.log("i am on hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
-    const offset = (page - 1) * pageSize;
+console.log("Logged in user:", authUserId, "| From params:", user_id);
 
-    if (!user_id) {
-      return res.status(400).json({ message: "User ID is required" });
+    // FIX: Remove parseInt() and compare strings directly
+    // Use .toLowerCase() to be extra safe against case sensitivity
+    if (!authUserId || user_id.toLowerCase() !== authUserId.toLowerCase()) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Access Denied: You can only view your own assignments." 
+      });
     }
 
-    // Build search filter
-    const issueWhere = {};
-    if (search) {
-      issueWhere[Op.or] = [
-        { title: { [Op.like]: `%${search}%` } },
-        { description: { [Op.like]: `%${search}%` } },
-      ];
-    }
 
-    // Count total issues for pagination
-    const total = await IssueAssignment.count({
-      where: { assignee_id: user_id },
-      include: [
-        {
-          model: Issue,
-          as: "issue",
-          where: issueWhere,
-        },
-      ],
-    });
-
-    // Fetch paginated issues
+    // Fetch assignments + related issues
     const assignments = await IssueAssignment.findAll({
-      where: { assignee_id: user_id },
+      where: { assignee_id: authUserId  },
       include: [
         {
           model: Issue,
           as: "issue",
-          where: issueWhere,
           include: [
             { model: Project, as: "project" },
             { model: IssueCategory, as: "category" },
@@ -660,24 +641,14 @@ const getAssignedIssues = async (req, res) => {
         },
       ],
       order: [["created_at", "DESC"]],
-      limit: pageSize,
-      offset,
     });
 
-    // Extract only the issues
+    // Extract ONLY the issues
     const issues = assignments.map((a) => a.issue);
-
-    const totalPages = Math.ceil(total / pageSize);
-
     res.status(200).json({
       success: true,
-      data: issues,
-      meta: {
-        page,
-        pageSize,
-        total,
-        totalPages,
-      },
+      count: issues.length,
+      issues,
     });
   } catch (error) {
     console.error("GET ASSIGNED ISSUES ERROR:", error);

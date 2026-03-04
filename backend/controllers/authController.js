@@ -228,7 +228,17 @@ const login = async (req, res) => {
     action: p.action
     // Don't include permission_id in JWT to keep token smaller
   }));
-    // Format user data for token
+    
+    // Minimal data for JWT token (only essential auth data - keeps cookie small)
+    const minimalUserDataForToken = {
+      user_id: user.user_id,
+      email: user.email,
+      user_type: user.userType ? user.userType.name : null,
+      institute_id: user.institute ? user.institute.institute_id : null,
+    };
+
+    // Full user data for response JSON (includes all roles, permissions, project data)
+    // This is sent in the response body, not in the JWT cookie
     const userDataForToken = {
       user_id: user.user_id,
       email: user.email,
@@ -281,8 +291,8 @@ const login = async (req, res) => {
         : [],
     };
 
-    // Generate JWT with comprehensive user data
-    const accessToken  = jwt.sign(userDataForToken, process.env.JWT_SECRET, {
+    // Generate minimal JWT for authentication (small token for fast cookie transmission)
+    const accessToken = jwt.sign(minimalUserDataForToken, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRATION_TIME || "15m",
     });
 // 🔹 Generate Refresh Token
