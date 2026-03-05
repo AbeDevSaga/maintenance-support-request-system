@@ -10,23 +10,25 @@ import Label from "../form/Label";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useUpdatePasswordMutation } from "../../redux/services/authApi";
+
 type ChangePasswordForm = {
-  currentPassword: string;
   newPassword: string;
   confirmPassword: string;
 };
 
 export default function ChangePassword() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
-  const [updatePassword] = useUpdatePasswordMutation();
+  const [updatePassword, { isLoading }] = useUpdatePasswordMutation();
+
   const {
     register,
     handleSubmit,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<ChangePasswordForm>();
+
   const getPasswordRequirements = (password: string) => {
     return {
       minLength: password.length >= 8,
@@ -37,25 +39,41 @@ export default function ChangePassword() {
     };
   };
 
-  const newPassword = watch("newPassword");
+  const newPassword = watch("newPassword", "");
   const requirements = getPasswordRequirements(newPassword || "");
 
   const onSubmit = async (data: ChangePasswordForm) => {
-    console.log(data, "data in change password");
+    console.log("Submitting password change:", {
+      newPassword: data.newPassword,
+    });
+
     try {
+      // Use .unwrap() to get the actual response or throw error
       const response = await updatePassword({
         new_password: data.newPassword,
-      });
-      if (response.error) {
-        toast.error(response.error.data.message);
-      } else {
+      }).unwrap();
+
+      console.log("Password update response:", response);
+
+      toast.success("Password changed successfully");
+
+      // Check if this was first login
+      if (user?.is_first_logged_in) {
+        console.log("First login - logging out and redirecting to login");
         await logout();
-        console.log("logged out successfully and navigating to login");
-        toast.success("Password changed successfully");
         navigate("/login");
+      } else {
+        console.log("Not first login - redirecting to dashboard");
+        navigate("/dashboard");
       }
     } catch (error: any) {
-      toast.error(error.data.message);
+      console.error("Password update error:", error);
+
+      // Handle different error formats
+      const errorMessage =
+        error?.data?.message || error?.message || "Failed to update password";
+
+      toast.error(errorMessage);
     }
   };
 
@@ -66,7 +84,9 @@ export default function ChangePassword() {
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-[#0C4A6E]">Change Password</h1>
           <p className="text-sm text-gray-500 mt-1">
-            This is your first login. Please set a new password.
+            {user?.is_first_logged_in
+              ? "This is your first login. Please set a new password."
+              : "Please set a new password."}
           </p>
         </div>
 
@@ -133,6 +153,7 @@ export default function ChangePassword() {
               </p>
             )}
           </div>
+
           {newPassword && (
             <div className="mt-3 space-y-1 text-xs">
               <p
@@ -142,7 +163,6 @@ export default function ChangePassword() {
               >
                 {requirements.minLength ? "✓" : "✗"} At least 8 characters
               </p>
-
               <p
                 className={
                   requirements.hasUpperCase ? "text-green-600" : "text-red-500"
@@ -150,7 +170,6 @@ export default function ChangePassword() {
               >
                 {requirements.hasUpperCase ? "✓" : "✗"} One uppercase letter
               </p>
-
               <p
                 className={
                   requirements.hasLowerCase ? "text-green-600" : "text-red-500"
@@ -158,7 +177,6 @@ export default function ChangePassword() {
               >
                 {requirements.hasLowerCase ? "✓" : "✗"} One lowercase letter
               </p>
-
               <p
                 className={
                   requirements.hasNumber ? "text-green-600" : "text-red-500"
@@ -166,7 +184,6 @@ export default function ChangePassword() {
               >
                 {requirements.hasNumber ? "✓" : "✗"} One number
               </p>
-
               <p
                 className={
                   requirements.hasSpecialChar
@@ -183,20 +200,20 @@ export default function ChangePassword() {
             {/* Submit */}
             <Button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full  bg-[#0C4A6E]"
+              disabled={isLoading}
+              className="w-full bg-[#0C4A6E]"
             >
-              Update Password
+              {isLoading ? "Updating..." : "Update Password"}
             </Button>
-            {/* cancel button */}
+
+            {/* Cancel button */}
             <Button
               type="button"
-              // remove token from local storage
               onClick={async () => {
                 await logout();
                 navigate("/login");
               }}
-              className="w-full  bg-gray-300  font-medium text-gray-900 rounded-md hover:bg-gray-400"
+              className="w-full bg-gray-300 font-medium text-gray-900 rounded-md hover:bg-gray-400"
             >
               Cancel
             </Button>

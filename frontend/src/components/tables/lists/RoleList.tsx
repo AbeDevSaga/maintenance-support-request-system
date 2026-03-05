@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Plus, Eye } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-
+import { useAuthRedirect } from "../../../hooks/useAuthRedirect";
 import {
   useGetRolesQuery,
   useDeleteRoleMutation,
@@ -93,12 +93,12 @@ export default function RoleList() {
     pageSize: 10,
   });
 
-  const { data, isLoading, isError, refetch } = useGetRolesQuery({
+  const { data, isLoading, isError, error, refetch } = useGetRolesQuery({
     search: searchQuery,
     page: pageDetail.pageIndex + 1,
     pageSize: pageDetail.pageSize,
   });
-
+  useAuthRedirect(error);
   useEffect(() => {
     refetch();
   }, [searchQuery, pageDetail.pageIndex, pageDetail.pageSize, refetch]);

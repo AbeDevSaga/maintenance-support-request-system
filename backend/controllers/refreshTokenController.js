@@ -18,76 +18,14 @@ const {
   RolePermission,
 } = require("../models");
 const crypto = require("crypto");
+const { parseDuration, DEFAULT_COOKIE_DURATIONS } = require("../utils/parseDuration");
 
 const generateRefreshToken = () => {
-  return crypto.randomBytes(64).toString("hex");
+  const length = parseInt(process.env.REFRESH_TOKEN_LENGTH) || 32;
+  return crypto.randomBytes(length).toString("hex");
 };
 const jwt = require("jsonwebtoken");
-// const refreshAccessToken = async (req, res) => {
-//   try {
-//     const { refreshToken } = req.cookies;
 
-//     if (!refreshToken) {
-//       return res.status(401).json({ message: "Refresh token required" });
-//     }
-
-//     const storedToken = await RefreshToken.findOne({
-//       where: {
-//         refresh_token: refreshToken,
-//         is_revoked: false,
-//       },
-//     });
-
-//     if (!storedToken) {
-//       return res.status(403).json({ message: "Invalid refresh token" });
-//     }
-
-//     if (new Date(storedToken.expires_at) < new Date()) {
-//       return res.status(403).json({ message: "Refresh token expired" });
-//     }
-
-//     // 🔥 ROTATION — revoke old token
-//     storedToken.is_revoked = true;
-//     await storedToken.save();
-
-//     const user = await User.findOne({
-//       where: { user_id: storedToken.user_id },
-//     });
-
-//     // Generate NEW tokens
-//     const newAccessToken = jwt.sign(
-//       { user_id: user.user_id },
-//       process.env.JWT_SECRET,
-//       { expiresIn: "15m" }
-//     );
-
-//     const newRefreshToken = generateRefreshToken();
-
-//     const newExpiry = new Date();
-//     newExpiry.setDate(newExpiry.getDate() + 7);
-
-//     await RefreshToken.create({
-//       refresh_token: newRefreshToken,
-//       user_id: user.user_id,
-//       expires_at: newExpiry,
-//       is_revoked: false,
-//     });
-
-//     res.cookie("refreshToken", newRefreshToken, {
-//       httpOnly: true,
-//       secure: true,
-//     sameSite: "None",
-//     });
-
-//     return res.status(200).json({
-//       accessToken: newAccessToken,
-//     });
-
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({ message: "Internal server error" });
-//   }
-// };
 const refreshAccessToken = async (req, res) => {
   try {
     const { refreshToken } = req.cookies;
@@ -103,17 +41,15 @@ const refreshAccessToken = async (req, res) => {
       },
     });
 
-    if (!storedToken) {
+    if (!storedToken || new Date(storedToken.expires_at) < new Date()) {
+      // Clear invalid cookies
+      res.clearCookie("accessToken", { path: "/" });
+      res.clearCookie("refreshToken", { path: "/" });
       return res.status(403).json({ message: "Invalid refresh token" });
     }
 
-    if (new Date(storedToken.expires_at) < new Date()) {
-      return res.status(403).json({ message: "Refresh token expired" });
-    }
-
     // Revoke old token
-    storedToken.is_revoked = true;
-    await storedToken.save();
+    await storedToken.update({ is_revoked: true });
 
     // Get complete user data with all associations (same as in login)
     const user = await User.findOne({
@@ -162,7 +98,7 @@ const refreshAccessToken = async (req, res) => {
                 model: RolePermission,
                 attributes: ["is_active"],
               },
-              attributes: ["permission_id", "action", "resource"],
+              attributes: [ "action", "resource"],
               where: {
                 is_active: true,
               },
@@ -182,29 +118,21 @@ const refreshAccessToken = async (req, res) => {
       return res.status(403).json({ message: "User is inactive" });
     }
 
-    // Collect permissions (same logic as login)
-    const allPermissions = new Map();
-    const addRolePermissions = (role) => {
-      if (role && role.permissions) {
-        role.permissions.forEach((permission) => {
-          if (!allPermissions.has(permission.permission_id)) {
-            allPermissions.set(permission.permission_id, {
-              permission_id: permission.permission_id,
-              action: permission.action,
-              resource: permission.resource,
-            });
-          }
-        });
-      }
-    };
-
+    // Collect permissions
+    const permissions = [];
     if (user.roles) {
-      user.roles.forEach((role) => {
-        addRolePermissions(role);
+      user.roles.forEach(role => {
+        if (role.permissions) {
+          role.permissions.forEach(perm => {
+            permissions.push(`${perm.resource}:${perm.action}`);
+          });
+        }
       });
     }
 
-    const uniquePermissions = Array.from(allPermissions.values());
+
+
+    
 
     // Format user data for token (same as login)
     const userDataForToken = {
@@ -238,7 +166,7 @@ const refreshAccessToken = async (req, res) => {
             level: user.internalNode.level,
           }
         : null,
-      permissions: uniquePermissions,
+      permissions: [...new Set(permissions)],
       roles: user.roles
         ? user.roles.map((role) => ({
             role_id: role.role_id,
@@ -251,12 +179,12 @@ const refreshAccessToken = async (req, res) => {
     const newAccessToken = jwt.sign(
       userDataForToken, // Use full user data, not just user_id
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRATION_TIME || "15m" }
+      { expiresIn: process.env.JWT_EXPIRATION_TIME || "2m" }
     );
 
     const newRefreshToken = generateRefreshToken();
     const newExpiry = new Date();
-    newExpiry.setDate(newExpiry.getDate() + 7);
+    newExpiry.setTime(newExpiry.getTime() + (parseDuration(process.env.REFRESH_TOKEN_EXPIRY) || DEFAULT_COOKIE_DURATIONS.REFRESH_TOKEN));
 
     await RefreshToken.create({
       refresh_token: newRefreshToken,
@@ -265,11 +193,21 @@ const refreshAccessToken = async (req, res) => {
       is_revoked: false,
     });
 
-    res.cookie("refreshToken", newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Use secure in production
-      sameSite: "Strict",
-    });
+res.cookie("accessToken", newAccessToken, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "Lax",
+  maxAge: parseDuration(process.env.ACCESS_TOKEN_EXPIRY) || DEFAULT_COOKIE_DURATIONS.ACCESS_TOKEN,
+  path: "/",
+});
+
+res.cookie("refreshToken", newRefreshToken, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "Lax",
+  maxAge: parseDuration(process.env.REFRESH_TOKEN_EXPIRY) || DEFAULT_COOKIE_DURATIONS.REFRESH_TOKEN,
+  path: "/",
+});
 
     return res.status(200).json({
       accessToken: newAccessToken,

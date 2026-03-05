@@ -55,7 +55,10 @@ export default function IssueHistoryLog({ logs, onClose }: LogsPreviewProps) {
     if (log.escalation) return "bg-purple-50 border-purple-200";
     return "bg-gray-50 border-gray-200";
   };
-
+  const sortedLogs = [...logs].sort(
+    (a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  );
   return (
     <motion.div
       initial={{ opacity: 0, x: 100 }}
@@ -65,27 +68,30 @@ export default function IssueHistoryLog({ logs, onClose }: LogsPreviewProps) {
       className="absolute top-0 right-0 w-full lg:w-[360px] bg-white border-l border-[#D5E3EC] h-full flex flex-col gap-3 shadow-lg overflow-y-auto"
     >
       <div className="p-6 relative border-b border-[#D5E3EC] bg-gradient-to-r from-[#1E516A] to-[#2C6B8A]">
-        <h2 className="text-xl font-bold text-white">Support Request Timeline</h2>
-        <p className="text-white text-sm mt-1">View the timeline of the support request</p>
-     <div className="absolute top-5 right-5">
-     {onClose && (
-          <button
-            onClick={onClose}
-            className="text-white font-bold hover:text-white transition-colors"
-          >
-            <X className="w-5 font-bold h-5" />
-          </button>
-        )}
+        <h2 className="text-xl font-bold text-white">
+          Support Request Timeline
+        </h2>
+        <p className="text-white text-sm mt-1">
+          View the timeline of the support request
+        </p>
+        <div className="absolute top-5 right-5">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="text-white font-bold hover:text-white transition-colors"
+            >
+              <X className="w-5 font-bold h-5" />
+            </button>
+          )}
         </div>
       </div>
-
 
       <div className="relative px-4 my-5 mb-8">
         {/* Vertical timeline line */}
         <div className="absolute left-5 top-2 bottom-2 w-0.5 bg-gradient-to-b from-blue-200 via-purple-200 to-green-200"></div>
 
         <div className="space-y-4">
-          {logs.map((log, index) => (
+          {sortedLogs.map((log, index) => (
             <div key={log.history_id} className="relative flex gap-3">
               {/* Timeline number */}
               <div className="relative w-6 h-6 ">
@@ -99,7 +105,7 @@ export default function IssueHistoryLog({ logs, onClose }: LogsPreviewProps) {
               {/* Content card */}
               <div
                 className={`flex-1 p-2 rounded-lg border -ml-2 text-sm ${getActionColor(
-                  log
+                  log,
                 )}`}
               >
                 <div className="flex justify-between items-center mb-1">
@@ -108,7 +114,7 @@ export default function IssueHistoryLog({ logs, onClose }: LogsPreviewProps) {
                   </span>
                   <span
                     className={`px-1 py-0.5 rounded-full text-[10px] font-semibold border ${getStatusColor(
-                      log.status_at_time
+                      log.status_at_time,
                     )}`}
                   >
                     {formatStatus(log.status_at_time) || "N/A"}

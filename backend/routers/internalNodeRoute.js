@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const internalNodeController = require("../controllers/internalNodeController");
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken ,checkPermission} = require("../middlewares/authMiddleware");
 const {
   validateCreateInternalNode,
   validateInternalNodeId,
@@ -59,16 +59,18 @@ router.post(
   "/",
   authenticateToken,
   validateCreateInternalNode,
+  checkPermission('request_flows','create'),
   internalNodeController.createInternalNode
 );
 
 // Get all internal nodes
-router.get("/", authenticateToken, internalNodeController.getInternalNodes);
+router.get("/", authenticateToken,checkPermission('request_flows','read'), internalNodeController.getInternalNodes);
 
 // Get top-level (parent) internal nodes
 router.get(
   "/parent-nodes",
   authenticateToken,
+  checkPermission('request_flows','read'),
   internalNodeController.getParentInternalNodes
 );
 
@@ -80,7 +82,7 @@ router.get(
 );
 
 // Get full internal tree
-router.get("/tree", authenticateToken, internalNodeController.getInternalTree);
+router.get("/tree", authenticateToken,checkPermission('request_flows','read'), internalNodeController.getInternalTree);
 
 // Get internal node by ID
 router.get(
@@ -96,6 +98,7 @@ router.put(
   authenticateToken,
   validateInternalNodeId,
   validateUpdateInternalNode,
+  checkPermission('request_flows','update'),
   internalNodeController.updateInternalNode
 );
 
@@ -104,6 +107,7 @@ router.delete(
   "/:id",
   authenticateToken,
   validateInternalNodeId,
+  checkPermission('request_flows','delete'),
   internalNodeController.deleteInternalNode
 );
 

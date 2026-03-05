@@ -9,7 +9,9 @@ import { FileUploadField } from "../../components/common/FileUploadField";
 interface EscalationPreviewProps {
   issue_id: string;
   from_tier: string;
+  from_tier_name?: string; // Add this
   to_tier: string | null;
+  to_tier_name?: string; // Add this
   escalated_by: string;
   onClose?: () => void;
 }
@@ -17,7 +19,9 @@ interface EscalationPreviewProps {
 export default function EscalationPreview({
   issue_id,
   from_tier,
+  from_tier_name,
   to_tier,
+  to_tier_name = "EAII", // Default to EAII if not provided
   escalated_by,
   onClose,
 }: EscalationPreviewProps) {
@@ -32,17 +36,23 @@ export default function EscalationPreview({
     }
 
     try {
+      console.log("Submitting escalation:", {
+        issue_id,
+        from_tier,
+        to_tier,
+        escalated_by,
+      });
+
       await escalateIssue({
         issue_id,
         from_tier,
-        to_tier: to_tier || null,
+        to_tier, // This will be Central Admin's ID for Branch One, null for Central Admin
         reason,
         escalated_by,
         attachment_ids: attachmentIds,
       }).unwrap();
 
       toast.success("Issue escalated successfully!");
-
       onClose?.();
     } catch (error: any) {
       toast.error(error?.data?.message || "Failed to escalate issue.");
@@ -59,9 +69,11 @@ export default function EscalationPreview({
     >
       <div className="p-6 border-b border-[#D5E3EC] bg-gradient-to-r from-[#1E516A] to-[#2C6B8A]">
         <h2 className="text-xl font-bold text-white">Escalate Request</h2>
-          <p className="text-white text-sm mt-1">Upload files related to the escalation</p>
-        </div>
-        <div className="flex flex-col px-4 gap-3">
+        <p className="text-white text-sm mt-1">
+          {from_tier_name} → {to_tier_name}
+        </p>
+      </div>
+      <div className="flex flex-col px-4 gap-3">
         <h4 className="font-semibold text-[#1E516A] mt-4">Escalation Reason</h4>
         <textarea
           className="w-full border border-[#BFD7EA] rounded-lg p-3 text-sm h-32 focus:outline-none focus:ring-2 focus:ring-[#1E516A]"
@@ -71,21 +83,18 @@ export default function EscalationPreview({
         />
 
         <FileUploadField
-        className="flex flex-col gap-1 font-bold"
-
+          className="flex flex-col gap-1 font-bold"
           id="escalation_attachments"
           label="Upload files"
           value={attachmentIds}
           onChange={setAttachmentIds}
           accept="image/*,.pdf,.doc,.docx"
           multiple={true}
-          labelClass="text-sm  text-[#1E516A] "
-
+          labelClass="text-sm text-[#1E516A]"
         />
 
-       
         <div className="w-full flex justify-end gap-3 mt-3">
-        <button
+          <button
             onClick={onClose}
             disabled={isLoading}
             className="px-5 py-2 rounded-md bg-gray-200 border text-gray-700 font-semibold disabled:opacity-50"
@@ -99,7 +108,6 @@ export default function EscalationPreview({
           >
             {isLoading ? "Submitting..." : "Confirm"}
           </button>
-          
         </div>
       </div>
     </motion.div>

@@ -5,7 +5,7 @@ const {
   validateCreateRole,
   validateUpdateRole,
 } = require("../validators/roleValidator");
-const {authenticateToken}=require('../middlewares/authMiddleware')
+const {authenticateToken,checkPermission}=require('../middlewares/authMiddleware')
 const {
   createRole,
   getRoles,
@@ -17,17 +17,17 @@ const {
 } = require('../controllers/roleController');
 
 // Role CRUD routes
-router.post('/',authenticateToken,validateCreateRole, createRole);
-router.get('/',authenticateToken, getRoles);
-router.get('/:id',authenticateToken, getRoleById);
-router.put("/:id", authenticateToken, validateUpdateRole,updateRole);
-router.delete('/:id',authenticateToken, deleteRole);
+router.post('/',authenticateToken,validateCreateRole, checkPermission('roles', 'create'),createRole);
+router.get('/',authenticateToken,  getRoles);
+router.get('/:id',authenticateToken, checkPermission('roles', 'read'),getRoleById);
+router.put("/:id", authenticateToken, validateUpdateRole ,checkPermission('roles', 'update'),updateRole);
+router.delete('/:id',authenticateToken, checkPermission('roles', 'delete'),deleteRole);
 
 // Additional role-related routes
-router.get("/:id/sub-roles", authenticateToken,getSubRolesByRole);
+router.get("/:id/sub-roles", authenticateToken,checkPermission('roles', 'read'),getSubRolesByRole);
 router.get(
   "/:roleId/sub-roles/:subRoleId/permissions",
-  authenticateToken,getPermissionsByRoleSubRole
+  authenticateToken,checkPermission('roles', 'read'),getPermissionsByRoleSubRole
 );
 /**
  * @swagger

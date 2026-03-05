@@ -107,17 +107,31 @@ export default function TaskList() {
   });
 
   const { data: loggedUser, isLoading: userLoading } = useGetCurrentUserQuery();
-  const userId = loggedUser?.user?.user_id || "";
+  const userId = loggedUser?.user_id;
 
-  // Map project-role pairs
+  useEffect(() => {
+    console.log("🔹 Logged User Full Object:", loggedUser);
+    console.log("🔹 userId:", userId);
+    console.log("🔹 projectRoles:", loggedUser?.project_roles);
+    console.log(
+      "🔹 institute:",
+      loggedUser?.user?.institute ||
+        loggedUser?.institute ||
+        loggedUser?.data?.institute,
+    );
+  }, [loggedUser]);
+
+  // Fix: Access project_roles directly from loggedUser, not loggedUser.user
   const projectHierarchyPairs = useMemo(
     () =>
-      (loggedUser?.user?.project_roles || []).map((role) => ({
+      (loggedUser?.project_roles || []).map((role) => ({
         project_id: role.project?.project_id!,
         hierarchy_node_id: role.hierarchy_node?.hierarchy_node_id || null,
       })),
-    [loggedUser]
+    [loggedUser],
   );
+
+  console.log("🔹 projectHierarchyPairs:", projectHierarchyPairs);
 
   // Use custom hook to fetch all issues
   const {
@@ -129,7 +143,7 @@ export default function TaskList() {
     projectHierarchyPairs,
     userId,
     pageDetail.pageIndex + 1,
-    pageDetail.pageSize
+    pageDetail.pageSize,
   );
 
   const allIssues = useMemo(() => {
@@ -154,13 +168,6 @@ export default function TaskList() {
   }, [issuesData]);
 
   console.log("allIssues: ", allIssues);
-
-  // Apply status filter
-  // const filteredIssues = useMemo(() => {
-  //   return allIssues.filter(
-  //     (issue) => statusFilter === "all" || issue.status === statusFilter
-  //   );
-  // }, [allIssues, statusFilter]);
 
   useEffect(() => {
     if (issuesData?.meta) {

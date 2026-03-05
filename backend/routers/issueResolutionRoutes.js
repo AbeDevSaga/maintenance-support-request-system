@@ -4,7 +4,7 @@ const controller = require("../controllers/Issue/issueResolutionController");
 const {
   validateResolveIssue,
 } = require("../validators/issueResolutionValidator");
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken,checkPermission } = require("../middlewares/authMiddleware");
 
 /**
  * @swagger
@@ -88,7 +88,7 @@ const { authenticateToken } = require("../middlewares/authMiddleware");
  *       500:
  *         description: Internal Server Error
  */
-router.post("/", authenticateToken, validateResolveIssue, controller.resolveIssue);
+router.post("/", authenticateToken, validateResolveIssue, checkPermission('request','resolve'),controller.resolveIssue);
 
 /**
  * @swagger
@@ -111,7 +111,7 @@ router.post("/", authenticateToken, validateResolveIssue, controller.resolveIssu
  *       500:
  *         description: Internal Error
  */
-router.get("/issue/:issue_id", authenticateToken, controller.getResolutionsByIssueId);
+router.get("/issue/:issue_id", authenticateToken,checkPermission('request','read'), controller.getResolutionsByIssueId);
 
 /**
  * @swagger
@@ -134,7 +134,7 @@ router.get("/issue/:issue_id", authenticateToken, controller.getResolutionsByIss
  *       500:
  *         description: Internal Error
  */
-router.get("/id/:resolution_id", authenticateToken, controller.getResolutionById);
+router.get("/id/:resolution_id", authenticateToken,checkPermission('request','read'), controller.getResolutionById);
 
 /**
  * @swagger
@@ -157,7 +157,7 @@ router.get("/id/:resolution_id", authenticateToken, controller.getResolutionById
  *       500:
  *         description: Internal Error
  */
-router.get("/latest/:issue_id", authenticateToken, controller.getLatestResolutionByIssueId);
+router.get("/latest/:issue_id", authenticateToken,checkPermission('request','read'), controller.getLatestResolutionByIssueId);
 
 /**
  * @swagger
@@ -180,6 +180,6 @@ router.get("/latest/:issue_id", authenticateToken, controller.getLatestResolutio
  *       500:
  *         description: Internal Error
  */
-router.delete("/id/:resolution_id", authenticateToken, controller.deleteResolution);
+router.delete("/id/:resolution_id", authenticateToken,checkPermission('request','read'), controller.deleteResolution);
 
 module.exports = router;

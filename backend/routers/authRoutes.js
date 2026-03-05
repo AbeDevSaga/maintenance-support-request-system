@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/authController");
 const { validateLogin, validateUpdatePassword } = require("../validators/authValidator");
+const cookieParser = require('cookie-parser');
+
 const { authenticateToken } = require("../middlewares/authMiddleware");
 /**
  * @swagger
@@ -9,7 +11,7 @@ const { authenticateToken } = require("../middlewares/authMiddleware");
  *   name: Auth
  *   description: Authentication endpoints
  */
-
+router.use(cookieParser());
 /**
  * @swagger
  * /api/auth/login:

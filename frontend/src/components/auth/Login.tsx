@@ -35,6 +35,7 @@ export default function Login() {
     try {
       clearError(); // Clear any previous errors
       const response = await login(data); // Use AuthContext login
+      console.log("here response displayed", response);
 
       if (!response) return;
       console.log("Login response:", response);
@@ -45,7 +46,10 @@ export default function Login() {
       }
       // AuthContext will update its state, and AppLayout will detect it
       // Navigate to the intended destination or dashboard
-      navigate(from, { replace: true });
+      // Small delay to ensure state updates complete before navigation
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 100);
     } catch (err) {
       console.error("Login error:", err);
       // Error is already set in AuthContext, but you can also set form error

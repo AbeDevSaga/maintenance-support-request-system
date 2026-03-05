@@ -10,7 +10,7 @@ const {
   getMyAssignedIssues,
   getMyCreatedIssues,
 } = require("../controllers/issueFlowController");
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken,checkPermission } = require("../middlewares/authMiddleware");
 /**
  * @swagger
  * components:

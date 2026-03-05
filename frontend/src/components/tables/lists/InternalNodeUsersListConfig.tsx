@@ -94,7 +94,9 @@ export default function InternalNodeUsersListConfig({
   });
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [isModalOpen, setModalOpen] = useState(false);
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  // Remove currentProjectId state since it's not needed
+  // We'll use the projectId prop directly
+
   // Use the API query with search functionality
   const { data, isLoading, isError, refetch } =
     useGetUsersByInternalNodeIdQuery(
@@ -107,7 +109,7 @@ export default function InternalNodeUsersListConfig({
       },
       {
         skip: !projectId || !internal_node_id,
-      }
+      },
     );
 
   // Refetch when search query or pagination changes
@@ -179,7 +181,7 @@ export default function InternalNodeUsersListConfig({
         }));
       }
     }
-    setCurrentProjectId(localStorage.getItem("current_project_id") || null);
+    // REMOVED: setCurrentProjectId(localStorage.getItem("current_project_id") || null);
   }, [data, isError, isLoading, roleFilter]);
 
   // Apply pagination - server-side handled by API, client-side for role filter
@@ -191,7 +193,7 @@ export default function InternalNodeUsersListConfig({
 
     // Apply role filter client-side
     const filtered = response.filter((item) =>
-      item.role?.name?.toLowerCase().includes(roleFilter.toLowerCase())
+      item.role?.name?.toLowerCase().includes(roleFilter.toLowerCase()),
     );
 
     return filtered;
@@ -204,11 +206,16 @@ export default function InternalNodeUsersListConfig({
       pageSize,
     }));
   };
+
+  // Always show actions if we have a projectId (passed as prop)
+  // No need to check localStorage
+  const showActions = !!projectId;
+
   return (
     <PageLayout
       filters={filterFields}
       filterColumnsPerRow={1}
-      actions={ currentProjectId ? actions : [] }
+      actions={showActions ? actions : []}
       title="Assigned Users"
       description={`Users assigned to ${internal_node_name}`}
     >
@@ -226,9 +233,9 @@ export default function InternalNodeUsersListConfig({
         project_id={projectId}
         parent_node_id={internal_node_id}
         parent_node_name={internal_node_name}
-          isOpen={isModalOpen}
-          onClose={() => setModalOpen(false)}
-        />
+        isOpen={isModalOpen}
+        onClose={() => setModalOpen(false)}
+      />
     </PageLayout>
   );
 }

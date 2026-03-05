@@ -132,14 +132,20 @@ const getProjects = async (req, res) => {
   try {
     const {
       is_active,
-      institute_id,
       search, // optional: for name/email search
       page = 1,
       pageSize = 10,
     } = req.query;
+
+  
+const loggedUser = req.user; // entire user object
+const userId = loggedUser.user_id;
+const userType = loggedUser.user_type; // "external_user" or "internal_user"
+const instituteId = loggedUser.institute_id; 
+
+// console.log("User:", loggedUser, "Type:", userType, "Institute:", instituteId);
     // ====== Build filters dynamically ======
     const whereClause = {};
-
     if (is_active !== undefined) whereClause.is_active = is_active === "true";
 
     if (search) {
@@ -148,42 +154,61 @@ const getProjects = async (req, res) => {
         { description: { [Op.like]: `%${search}%` } },
       ];
     }
+
     // ====== Calculate pagination ======
     const pageNum = parseInt(page);
     const limit = parseInt(pageSize);
     const offset = (pageNum - 1) * limit;
 
-    // 🔹 Build include dynamically
-    const instituteInclude = {
+    // 🔹 Build institute include
+    const instituteInclude= {
       model: Institute,
       as: "institutes",
       attributes: ["institute_id", "name"],
       through: { attributes: [] },
     };
 
-    // 🔹 Apply institute filter ONLY if provided
-    if (institute_id) {
-      instituteInclude.where = { institute_id };
+    // 🔹 External users see only their institute
+    if (userType === "external_user") {
+      if (!instituteId) {
+        return res.status(400).json({
+          success: false,
+          message: "External user must have an institute assigned.",
+        });
+      }
+      instituteInclude.where = { institute_id: instituteId };
       instituteInclude.required = true; // INNER JOIN
+    } else if (req.query.institute_id) {
+      // internal users can filter by institute_id
+      instituteInclude.where = { institute_id: req.query.institute_id };
+      instituteInclude.required = true;
     }
 
     // ====== Fetch total count ======
     const total = await Project.count({
       where: whereClause,
-      include: institute_id ? [instituteInclude] : [],
+      include: [instituteInclude],
       distinct: true,
     });
 
+    // ====== Fetch projects ======
     const projects = await Project.findAll({
       where: whereClause,
       include: [instituteInclude],
       order: [["created_at", "DESC"]],
-      limit: limit,
-      offset: offset,
+      limit,
+      offset,
       distinct: true,
     });
 
     const totalPages = Math.ceil(total / limit);
+
+    if (!projects || projects.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No projects found.",
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -192,15 +217,17 @@ const getProjects = async (req, res) => {
       meta: {
         page: pageNum,
         pageSize: limit,
-        total: total,
-        totalPages: totalPages,
+        total,
+        totalPages,
       },
     });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: error.message });
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
   }
 };
 
@@ -270,6 +297,8 @@ const getProjectById = async (req, res) => {
 const getProjectByInstituteId = async (req, res) => {
   try {
     const { institute_id } = req.params;
+    const userId=req.user_id;
+ console.log("usersssssssssss,",userId)
     const {
       is_active,
       search, // optional: for name/email search

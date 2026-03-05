@@ -4,7 +4,7 @@ const controller = require("../controllers/Issue/issueEscalationController");
 const {
   validateEscalateIssue,
 } = require("../validators/issueEscalationValidator");
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken,checkPermission } = require("../middlewares/authMiddleware");
 
 /**
  * @swagger
@@ -113,7 +113,7 @@ const { authenticateToken } = require("../middlewares/authMiddleware");
  *       500:
  *         description: Internal Server Error
  */
-router.post("/", authenticateToken, validateEscalateIssue, controller.escalateIssue);
+router.post("/", authenticateToken, validateEscalateIssue,checkPermission('request','escalate'), controller.escalateIssue);
 
 /**
  * @swagger
@@ -136,7 +136,7 @@ router.post("/", authenticateToken, validateEscalateIssue, controller.escalateIs
  *       500:
  *         description: Internal Error
  */
-router.get("/issue/:issue_id", authenticateToken, controller.getEscalationsByIssueId);
+router.get("/issue/:issue_id", authenticateToken,checkPermission('request','read'), controller.getEscalationsByIssueId);
 
 /**
  * @swagger
@@ -159,7 +159,7 @@ router.get("/issue/:issue_id", authenticateToken, controller.getEscalationsByIss
  *       500:
  *         description: Internal Error
  */
-router.get("/history/:issue_id", authenticateToken, controller.getEscalationHistoryByIssueId);
+router.get("/history/:issue_id", authenticateToken,checkPermission('request','read'), controller.getEscalationHistoryByIssueId);
 
 /**
  * @swagger
@@ -205,6 +205,6 @@ router.get("/id/:escalation_id", authenticateToken, controller.getEscalationById
  *       500:
  *         description: Internal Error
  */
-router.delete("/id/:escalation_id", authenticateToken, controller.deleteEscalation);
+router.delete("/id/:escalation_id", authenticateToken,checkPermission('request','escalate'), controller.deleteEscalation);
 
 module.exports = router;

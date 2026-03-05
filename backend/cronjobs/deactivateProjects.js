@@ -14,11 +14,11 @@ async function deactivateExpiredProjects() {
 
   for (const maintenance of expiredMaintenances) {
     const project = maintenance.project;
-    if (project.is_active) {
-      project.is_active = false;
-      await project.save();
-      console.log(`Project ${project.name} has been deactivated.`);
-    }
+    // if (project.is_active) {
+    //   project.is_active = false;
+    //   await project.save();
+    //   console.log(`Project ${project.name} has been deactivated.`);
+    // }
   }
 }
 

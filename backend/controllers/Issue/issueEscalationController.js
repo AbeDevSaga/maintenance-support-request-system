@@ -7,6 +7,7 @@ const {
   IssueHistory,
   EscalationAttachment,
   IssueEscalationHistory,
+  HierarchyNode,
   IssueAction,
   sequelize,
 } = require("../../models");
@@ -24,7 +25,6 @@ const escalateIssue = async (req, res) => {
     const {
       issue_id,
       from_tier,
-      to_tier,
       reason,
       escalated_by,
       attachment_ids,
@@ -41,15 +41,37 @@ const escalateIssue = async (req, res) => {
         .status(404)
         .json({ message: "User (escalated_by) not found." });
 
+    // 3. Determine the target tier (parent hierarchy)
+    let to_tier = null;
+    
+    // Get the current hierarchy node details
+    const currentNode = await HierarchyNode.findByPk(from_tier);
+    
+    if (!currentNode) {
+      return res.status(400).json({ message: "Invalid from_tier" });
+    }
+    
+    console.log("Current node:", currentNode.toJSON());
+    
+    // If current node has a parent, escalate to that parent
+    if (currentNode.parent_id) {
+      to_tier = currentNode.parent_id;
+      console.log(`Escalating to parent node: ${to_tier}`);
+    } else {
+      // If no parent (root node), escalate to internal/EAII
+      console.log("Root node - escalating to internal");
+      // to_tier remains null for internal escalation
+    }
+
     const escalation_id = uuidv4();
 
-    // 3. Create escalation
+    // 4. Create escalation
     await IssueEscalation.create(
       {
         escalation_id,
         issue_id,
         from_tier,
-        to_tier,
+        to_tier, // Now determined by backend
         reason,
         escalated_by,
         escalated_at: new Date(),
@@ -57,7 +79,7 @@ const escalateIssue = async (req, res) => {
       { transaction: t }
     );
 
-    // 4. Attach files
+    // 5. Attach files
     if (attachment_ids?.length > 0) {
       const links = attachment_ids.map((attachment_id) => ({
         escalation_id,
@@ -73,7 +95,7 @@ const escalateIssue = async (req, res) => {
       {
         issue_tier_id: uuidv4(),
         issue_id,
-        tier_level: to_tier,
+        tier_level: to_tier, // Will be parent ID or null
         handler_id: null,
         assigned_at: new Date(),
         status: "pending",
@@ -88,35 +110,31 @@ const escalateIssue = async (req, res) => {
         action_id: uuidv4(),
         issue_id,
         action_name: "Issue Escalated",
-        action_description: `Escalated from ${from_tier} to ${to_tier}`,
+        action_description: `Escalated from ${from_tier} to ${to_tier || 'Internal'}`,
         performed_by: escalated_by,
         related_tier: from_tier,
       },
       { transaction: t }
     );
 
-    // ==================================
-    // 8. CREATE IssueHistory ENTRY (NEW)
-    // ==================================
+    // 8. CREATE IssueHistory ENTRY
     await IssueHistory.create(
       {
         history_id: uuidv4(),
         issue_id: issue_id,
         user_id: escalated_by,
         action: "escalated",
-        status_at_time: "escalated", // Issue status doesn't change here
+        status_at_time: "escalated",
         escalation_id: escalation_id,
         resolution_id: null,
-        notes: `Escalated from tier ${from_tier} to tier ${to_tier}. Reason: ${reason}`,
+        notes: `Escalated from tier ${from_tier} to tier ${to_tier || 'Internal'}. Reason: ${reason}`,
         created_at: new Date(),
       },
       { transaction: t }
     );
 
-    // 9 update issue status
-    // Update issue status to 'in_progress'
-    // const oldStatus = issue.status;
-    issue.status = "escalated"; // <--- status update
+    // 9. Update issue status
+    issue.status = "escalated";
     await issue.save({ transaction: t });
 
     // ================================
@@ -124,9 +142,9 @@ const escalateIssue = async (req, res) => {
     // ================================
     try {
       if (issue.project_id && escalated_by && from_tier) {
-        if (to_tier !== null && to_tier !== undefined) {
+        // If we found a parent (to_tier exists)
+        if (to_tier) {
           console.log("Sending escalation notification to parent hierarchy...");
-          // Use the NotificationService
           await NotificationService.sendToImmediateParentHierarchy(
             {
               sender_id: escalated_by,
@@ -134,38 +152,33 @@ const escalateIssue = async (req, res) => {
               issue_id: issue.issue_id,
               hierarchy_node_id: from_tier,
               title: `Issue Escalated: ${issue.title}`,
-              message: `Issue with" (${issue.ticket_number}) has been escalated  in your child hierarchy. Please review and take necessary action.`,
+              message: `Issue (${issue.ticket_number}) has been escalated from your child hierarchy. Please review and take necessary action.`,
               type: "ISSUE_ESCALATED",
             },
-            t // Pass the transaction
+            t
           );
         } else {
-          console.log(
-            "Sending escalation notification to Internal Root Users..."
-          );
+          // No parent found - this is a root node, notify internal users
+          console.log("Sending escalation notification to Internal Root Users...");
           await NotificationService.sendToInternalAssignedRootUsers(
             {
               sender_id: escalated_by,
               project_id: issue.project_id,
               issue_id: issue.issue_id,
               hierarchy_node_id: from_tier,
-              title: `Issue Escalated: ${issue.title}`,
-              message: `Issue with" (${issue.ticket_number}) has been escalated  in your child hierarchy. Please review and take necessary action.`,
+              title: `Issue Escalated to Internal: ${issue.title}`,
+              message: `Issue (${issue.ticket_number}) has been escalated to internal team for resolution.`,
               type: "ISSUE_ESCALATED",
             },
-            t // Pass the transaction
+            t
           );
         }
-        // Note: We don't need to do anything with the result here
-        // It will return success even if no parents found
       }
     } catch (notificationError) {
-      // Log notification error but don't fail the issue creation
       console.warn(
         "Failed to send notification for issue escalation:",
         notificationError.message
       );
-      // Continue with issue creation even if notification fails
     }
 
     // COMMIT ALL
@@ -182,7 +195,23 @@ const escalateIssue = async (req, res) => {
           as: "attachments",
           include: [{ model: Attachment, as: "attachment" }],
         },
+        {
+          model: HierarchyNode,
+          as: "fromTierNode",
+          attributes: ["hierarchy_node_id", "name", "level"]
+        },
+        {
+          model: HierarchyNode,
+          as: "toTierNode",
+          attributes: ["hierarchy_node_id", "name", "level"]
+        }
       ],
+    });
+
+    console.log("Escalation completed:", {
+      from: from_tier,
+      to: to_tier || "Internal",
+      escalated_by
     });
 
     return res.status(201).json(fullEscalation);

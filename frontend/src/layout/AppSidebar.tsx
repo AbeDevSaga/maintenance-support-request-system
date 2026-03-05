@@ -10,52 +10,102 @@ import DynamicIcon from "../components/common/DynamicIcon";
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
-  const { hasAnyPermission, user } = useAuth();
+  const { hasAnyPermission, hasPermission, user } = useAuth();
   const userType = user?.user_type || "external_user";
   const location = useLocation();
 
+  // 🔍 DEBUG: Log user permissions
+  // console.log("🔍 AppSidebar - User:", user?.email);
+  // console.log("🔍 AppSidebar - User Type:", userType);
+  // console.log("🔍 AppSidebar - Raw Permissions:", user?.permissions);
+
+  // In AppSidebar.tsx, update the formattedPermissions display
+  const formattedPermissions = user?.permissions?.map((p) => {
+    if (typeof p === "string") {
+      return p.toUpperCase();
+    }
+    return `${p.resource}:${p.action}`.toUpperCase();
+  });
+  // console.log("🔍 AppSidebar - Formatted Permissions:", formattedPermissions);
+
+  // Test specific permissions
+  // console.log("🔍 Test USERS:READ:", hasPermission("USERS:READ"));
+  // console.log(
+  //   "🔍 Test DASHBOARD:VIEW_ALL:",
+  //   hasPermission("DASHBOARD:VIEW_ALL"),
+  // );
+  // console.log("🔍 Test users:read:", hasPermission("users:read"));
+
   const [openSubmenu, setOpenSubmenu] = useState<{ index: number } | null>(
-    null
+    null,
   );
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
-    {}
+    {},
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const isActive = useCallback(
     (path: string) =>
       location.pathname === path || location.pathname.startsWith(path + "/"),
-    [location.pathname]
+    [location.pathname],
   );
 
   // Get user type and filter menu items
   const filteredNavItems = getNavItemsByUserType(userType);
+  // console.log(
+  //   "🔍 Filtered by user type:",
+  //   filteredNavItems.map((item) => item.name),
+  // );
 
   // Filter menu items based on permissions
   const filterMenuItems = (items: NavItem[]) => {
     return items
       .map((item) => {
+        // 🔍 DEBUG: Check main item
+        console.log(`🔍 Checking item: ${item.name}`);
+
         // Check main item permission
-        if (item.permission && !hasAnyPermission(item.permission)) {
-          return null;
+        if (item.permission && item.permission.length > 0) {
+          const hasPerm = hasAnyPermission(item.permission);
+          // console.log(`  - Required permissions:`, item.permission);
+          // console.log(`  - Has any: ${hasPerm}`);
+          if (!hasPerm) {
+            console.log(`  ❌ Filtering out ${item.name} due to permissions`);
+            return null;
+          }
         }
-        if (item.anyPermissions && !hasAnyPermission(item.anyPermissions)) {
-          return null;
+
+        if (item.anyPermissions && item.anyPermissions.length > 0) {
+          const hasAny = hasAnyPermission(item.anyPermissions);
+          // console.log(`  - Any permissions required:`, item.anyPermissions);
+          // console.log(`  - Has any: ${hasAny}`);
+          if (!hasAny) {
+            console.log(
+              `  ❌ Filtering out ${item.name} due to anyPermissions`,
+            );
+            return null;
+          }
         }
 
         // Handle subitems
         let newSubItems = item.subItems?.filter((sub) => {
-          if (sub.permission && !hasAnyPermission(sub.permission)) {
-            return false;
+          // console.log(`  🔍 Checking subitem: ${sub.name}`);
+          if (sub.permission && sub.permission.length > 0) {
+            const hasSubPerm = hasAnyPermission(sub.permission);
+            // console.log(`    - Required:`, sub.permission);
+            // console.log(`    - Has: ${hasSubPerm}`);
+            return hasSubPerm;
           }
           return true;
         });
 
         // If no subitems left, hide parent
         if (item.subItems && (!newSubItems || newSubItems.length === 0)) {
+          // console.log(`  ❌ Filtering out ${item.name} - no visible subitems`);
           return null;
         }
 
+        // console.log(`  ✅ Keeping item: ${item.name}`);
         return {
           ...item,
           subItems: newSubItems,
@@ -106,7 +156,15 @@ const AppSidebar: React.FC = () => {
   const renderMenuItems = (items: NavItem[]) => {
     const filteredItems = filterMenuItems(items);
 
-    if (filteredItems.length === 0) return null;
+    // console.log(
+    //   "🔍 Final filtered items:",
+    //   filteredItems.map((item) => item.name),
+    // );
+
+    if (filteredItems.length === 0) {
+      console.log("🔍 No items to display");
+      return null;
+    }
 
     return (
       <ul className="flex flex-col gap-4">
@@ -213,14 +271,15 @@ const AppSidebar: React.FC = () => {
 
   return (
     <aside
+      key={user?.user_id || "no-user"} // Add this key to force re-render
       className={`fixed mt-5 flex flex-col top-0 px-5 left-0 bg-white dark:bg-gray-900 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 dark:border-gray-800 rounded-r-2xl
-        ${
-          isExpanded || isMobileOpen || isHovered
-            ? "w-[290px] lg:w-[290px] 3xl:w-[340px]"
-            : "w-[90px]"
-        }
-        ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
-        lg:translate-x-0`}
+      ${
+        isExpanded || isMobileOpen || isHovered
+          ? "w-[290px] lg:w-[290px] 3xl:w-[340px]"
+          : "w-[90px]"
+      }
+      ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
+      lg:translate-x-0`}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

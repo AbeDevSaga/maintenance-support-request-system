@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const controller = require("../controllers/issueCategoryController");
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken,checkPermission } = require("../middlewares/authMiddleware");
 /**
  * @swagger
  * tags:
@@ -174,10 +174,10 @@ const { authenticateToken } = require("../middlewares/authMiddleware");
  *         description: Internal Server Error
  */
 
-router.post("/",  authenticateToken,controller.createCategory);
-router.get("/", controller.getAllCategories);
-router.get("/:id", controller.getCategoryById);
-router.put("/:id", authenticateToken, controller.updateCategory);
-router.delete("/:id", authenticateToken, controller.deleteCategory);
+router.post("/",  authenticateToken,checkPermission('request_categories','create'),controller.createCategory);
+router.get("/",authenticateToken, controller.getAllCategories);
+router.get("/:id",authenticateToken,checkPermission('request_categories','read'), controller.getCategoryById);
+router.put("/:id", authenticateToken,checkPermission('request_categories','update'), controller.updateCategory);
+router.delete("/:id", authenticateToken,checkPermission('request_categories','delete'), controller.deleteCategory);
 
 module.exports = router;

@@ -6,7 +6,7 @@ const {
   validateUpdateInstitute,
   validateInstituteId,
 } = require("../validators/instituteValidator"); // Joi-based validators
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken ,checkPermission} = require("../middlewares/authMiddleware");
 
 /**
  * @swagger
@@ -71,6 +71,7 @@ router.post(
   "/",
   authenticateToken,
   validateCreateInstitute,
+  checkPermission('organizations','create'),
   instituteController.createInstitute
 );
 
@@ -86,7 +87,7 @@ router.post(
  *       500:
  *         description: Internal server error
  */
-router.get("/", authenticateToken, instituteController.getInstitutes);
+router.get("/", authenticateToken, checkPermission('organizations','read'),instituteController.getInstitutes);
 
 /**
  * @swagger
@@ -113,6 +114,7 @@ router.get(
   "/:id",
   authenticateToken,
   validateInstituteId,
+  checkPermission('organizations','read'),
   instituteController.getInstituteById
 );
 
@@ -148,6 +150,7 @@ router.put(
   authenticateToken,
   validateUpdateInstitute,
   validateInstituteId,
+  checkPermission('organizations','update'),
   instituteController.updateInstitute
 );
 
@@ -176,6 +179,7 @@ router.delete(
   "/:id",
   authenticateToken,
   validateInstituteId,
+  checkPermission('organizations','delete'),
   instituteController.deleteInstitute
 );
 

@@ -5,7 +5,7 @@ const {
   validateInstituteProject,
   validateInstituteProjectId,
 } = require("../validators/instituteProjectValidator");
-const { authenticateToken } = require("../middlewares/authMiddleware");
+const { authenticateToken ,checkPermission} = require("../middlewares/authMiddleware");
 
 /**
  * @swagger
@@ -75,6 +75,7 @@ router.post(
   "/",
    authenticateToken,
   validateInstituteProject,
+  checkPermission('projects','read'),
   instituteProjectController.createInstituteProject
 );
 
@@ -175,6 +176,7 @@ router.put(
     authenticateToken,
   validateInstituteProjectId,
   validateInstituteProject,
+  checkPermission('projects','update'),
   instituteProjectController.updateInstituteProject
 );
 
@@ -207,6 +209,7 @@ router.delete(
   "/:id",
     authenticateToken,
   validateInstituteProjectId,
+  checkPermission('projects','delete'),
   instituteProjectController.deleteInstituteProject
 );
 
