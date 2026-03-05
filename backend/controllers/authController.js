@@ -221,7 +221,7 @@ console.log("- Refresh Token length:", refreshToken.length);
 const isProduction = process.env.NODE_ENV === "production";
     // Set cookies
     // Access Token in secure cookie (httpOnly)
-    // Access Token cookie
+    // Access Token cookie    
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
