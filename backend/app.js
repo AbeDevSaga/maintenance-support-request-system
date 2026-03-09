@@ -76,27 +76,39 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
 ];
 
+// CORS
 const corsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [
-      "http://196.188.240.103:4037",
       "http://localhost:4037",
-      "http://localhost:4000",
-      "http://localhost:5173",
+      "http://196.188.240.103:4037",
       "http://127.0.0.1:5173",
+      "http://localhost:4000",
       process.env.FRONTEND_URL,
-    ].filter(Boolean); // Remove undefined values
-    
+    ].filter(Boolean);
+
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.log('CORS blocked origin:', origin); // Add logging for debugging
+      console.log("CORS blocked:", origin);
       callback(new Error("Not allowed by CORS"));
     }
   },
-  credentials: true, // This is CRITICAL for cookies
-  optionsSuccessStatus: 200 // Some browsers (like Chrome) need this
+  credentials: true,
 };
+app.use(cors(corsOptions));
+
+// Remove wildcard in static headers, allow credentials dynamically
+const setDynamicCorsHeaders = (req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+  next();
+};
+
+app.use(setDynamicCorsHeaders);
 
 app.use(cors(corsOptions));
 app.use(cookieParser());

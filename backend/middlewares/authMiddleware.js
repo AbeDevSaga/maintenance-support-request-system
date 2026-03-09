@@ -8,9 +8,10 @@ const authenticateToken = async (req, res, next) => {
   // console.log('Cookies received:', req.cookies);
   // console.log('Cookie header:', req.headers.cookie);
   let token = req.cookies.accessToken;
-  //  console.log('Token from cookie:',token, token ? '✅ Present' : '❌ Missing');
+  // console.log('Token from cookie:',token, token ? '✅ Present' : '❌ Missing');
   // Fallback to Authorization header for backward compatibility
   const authHeader = req.headers["authorization"];
+  // console.log("lllllllllllllllllllll",authHeader)
   if (!token && authHeader) {
     token = authHeader.split(" ")[1];
     console.log('Token from header:', token ? '✅ Present' : '❌ Missing');

@@ -224,7 +224,7 @@ const isProduction = process.env.NODE_ENV === "production";
     // Access Token cookie    
     res.cookie("accessToken", accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       sameSite: "lax",
       maxAge: parseDuration(process.env.ACCESS_TOKEN_EXPIRY) || DEFAULT_COOKIE_DURATIONS.ACCESS_TOKEN,
       path: '/',
@@ -233,7 +233,7 @@ const isProduction = process.env.NODE_ENV === "production";
     // Refresh Token in secure cookie (httpOnly)
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       sameSite: "lax",
       maxAge: parseDuration(process.env.REFRESH_TOKEN_EXPIRY) || DEFAULT_COOKIE_DURATIONS.REFRESH_TOKEN,
       path: "/",
